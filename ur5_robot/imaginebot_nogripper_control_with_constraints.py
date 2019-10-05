@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 
-Imaginebot basic setup and control(ur5 robot + robotiq 2f-85 gripper).
+Imaginebot basic setup and control(ur5 robot).
 @author: Hongtao Wu
 10/03/2019
 
@@ -17,9 +17,9 @@ from attrdict import AttrDict
 import math
 
 
-class Robot(object):
+class RobotNoGripper(object):
     def __init__(self, robot_urdf):
-        super(Robot, self).__init__()
+        super(RobotNoGripper, self).__init__()
 
         self.serverMode = p.GUI # GUI/DIRECT
 
@@ -42,6 +42,9 @@ class Robot(object):
                         'wrist_2_joint': 5,
                         'wrist_3_joint': 6,
                         'ee_fixed_joint': 7}
+        
+        # End Effector ID
+        self.eeID = self.jointID['ee_fixed_joint']
 
         # Joint for control
         self.controlJoints = ["shoulder_pan_joint",
@@ -55,9 +58,9 @@ class Robot(object):
         self.initialJointValue = {'world_joint': 0,
                                   'shoulder_pan_joint': 0,
                                   'shoulder_lift_joint': -math.pi/2,
-                                  'elbow_joint': 0,
-                                  'wrist_1_joint': 0,
-                                  'wrist_2_joint': 0,
+                                  'elbow_joint': math.pi/2,
+                                  'wrist_1_joint': -math.pi/2,
+                                  'wrist_2_joint': -math.pi/2,
                                   'wrist_3_joint': 0,
                                   'ee_fixed_joint': 0}
         
@@ -73,7 +76,7 @@ class Robot(object):
                             flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT) # This will discord self-collision between a child link and any of its ancestors.
 
 
-        # Get Robot Joint Number
+        # Get robot joint number
         self.numJoints = p.getNumJoints(self.robotID) # The robot has 18 joints (including the gripper)
         print('Number of joint:{}'.format(self.numJoints))
 
@@ -84,15 +87,16 @@ class Robot(object):
         
         ##############################
         # Get Robot Joint Information
-        # jointInfoList = [p.getJointInfo(self.robotID, jointID) for jointID in range(self.numJoints)]
-        # for jointInfo in jointInfoList:
-        #     print(jointInfo)
+        jointInfoList = [p.getJointInfo(self.robotID, jointID) for jointID in range(self.numJoints)]
+        for jointInfo in jointInfoList:
+            print(jointInfo)
         ##############################
 
+        # Robot joint information
+        # It can be called by self.joints[joint_name].id/type/lowerLimit...
         jointTypeList = ["REVOLUTE", "PRISMATIC", "SPHERICAL", "PLANAR", "FIXED"]
 
-        jointInfo = namedtuple("jointInfo", 
-                            ["id","name","type","lowerLimit","upperLimit","maxForce","maxVelocity","controllable"])
+        jointInfo = namedtuple("jointInfo", ["id","name","type","lowerLimit","upperLimit","maxForce","maxVelocity","controllable"])
         self.joints = AttrDict()
         for i in range(self.numJoints):
             info = p.getJointInfo(self.robotID, i)
@@ -108,13 +112,60 @@ class Robot(object):
             info = jointInfo(jointID,jointName,jointType,jointLowerLimit,
                             jointUpperLimit,jointMaxForce,jointMaxVelocity,controllable)
             
-            # if info.type=="REVOLUTE": # set revolute joint to static
-            #     p.setJointMotorControl2(robotID, info.id, p.VELOCITY_CONTROL, targetVelocity=0, force=0)
             self.joints[info.name] = info
 
-    def test(self):
+
+    def readJointState(self, jointID):
+        '''
+        Return the state of the joint: jointPosition, jointVelocity, jointReactionForces, appliedJointMotroTorque
+        '''
+        return p.getJointState(self.robotID, jointID)
+
+
+    def readEndEffectorState(self):
+        '''
+        Return the position and orientation (quaternion) of the endeffector
+        '''
+        ee_state = p.getLinkState(self.robotID, self.eeID)
+        
+        return ee_state[0], ee_state[1]
+    
+
+    def goto(self, pos, orn=None):
+        '''
+        pos: list of 3 floats
+        orn: list of 4 floats, in quaternion
+        Make the end-effector reach a given target position in Cartesian world space.
+        '''
+        if orn:
+            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos, targetOrientation=orn)
+            print('joint target pose list: {}'.format(jointTargetPose_list))
+        else:
+            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos)
+            print('joint target pose list: {}'.format(jointTargetPose_list))
+        
         while True:
+            for jointIdx, jointName in enumerate(self.controlJoints):
+                jointTargetState = jointTargetPose_list[jointIdx]
+                p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
+                                        targetPosition=jointTargetState, force=self.joints[jointName].maxForce,
+                                        maxVelocity=self.joints[jointName].maxVelocity)
             p.stepSimulation()
+            time.sleep(1./240.)
+
+
+    def test(self, sim_timesteps=None):
+        '''
+        sim_timesteps: if None, then simulate forever; if not, simulate for the sim_timesteps
+        '''
+        if not sim_timesteps:
+            while True:
+                p.stepSimulation()
+        else:
+            for i in range(sim_timesteps):
+                p.stepSimulation()
+                time.sleep(1./240.)
+
 
     def debug(self):
         userParams = dict()
@@ -122,14 +173,46 @@ class Robot(object):
             joint = self.joints[name]
             userParam = p.addUserDebugParameter(name, joint.lowerLimit, joint.upperLimit, 0)
             userParams[name] = userParam
-        while(flag):
+        while True:
             for name in self.controlJoints:
                 joint = self.joints[name]
                 pose = p.readUserDebugParameter(userParams[name])
                 p.setJointMotorControl2(self.robotID, joint.id, p.POSITION_CONTROL,
                                         targetPosition=pose, force=joint.maxForce, 
                                         maxVelocity=joint.maxVelocity)
+
             p.stepSimulation()
+
+
+if __name__ == "__main__":
+
+    # start simulation
+    try:
+        robotUrdfPath = "./urdf/imaginebot_nogripper.urdf"
+        rob = RobotNoGripper(robotUrdfPath)
+        
+        rob.debug()
+
+        # rob.test(100)
+
+    #     pos, orn = rob.readEndEffectorState()
+
+    #     print('#######################')
+    #     print('pos: {} \n'.format(pos))
+    #     print('orn in Euler Angle: {} \n'.format(p.getEulerFromQuaternion(orn)))
+    #     print('#######################')
+
+    #     time.sleep(2)
+
+    #     new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
+    #     new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
+
+    #     rob.goto(new_pos, new_orn)
+
+    #     p.disconnect()
+    except:
+        p.disconnect()
+
 
     # ###############################################
     # ## set up mimic joints in robotiq_c2 gripper ##
@@ -155,17 +238,4 @@ class Robot(object):
     #                            childFramePosition=[0,0,0])
     #     p.changeConstraint(c, gearRatio=mimicMul[i], maxForce=child.maxForce)
     #     constraints[name] = c
-
-
-if __name__ == "__main__":
-
-    # start simulation
-    try:
-        flag = True
-        robotUrdfPath = "./urdf/imaginebot_nogripper.urdf"
-        rob = Robot(robotUrdfPath)
-        rob.test()
-        p.disconnect()
-    except:
-        p.disconnect()
 
