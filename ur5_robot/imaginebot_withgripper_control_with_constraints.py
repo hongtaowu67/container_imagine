@@ -15,6 +15,7 @@ import pybullet_data
 from collections import namedtuple
 from attrdict import AttrDict
 import math
+import tools
 
 
 class RobotWithGripper(object):
@@ -51,10 +52,13 @@ class RobotWithGripper(object):
                         'robotiq_85_left_inner_knuckle_joint': 14,
                         'robotiq_85_left_finger_tip_joint': 15,
                         'robotiq_85_right_inner_knuckle_joint': 16,
-                        'robotiq_85_right_figer_tip_joint': 17}
+                        'robotiq_85_right_finger_tip_joint': 17}
         
         # End Effector ID
         self.eeID = self.jointID['ee_fixed_joint']
+        
+        # Finger-End Effector offset (in the gripper frame [x, y, z])
+        self.ee_finger_offset = [0.10559, 0.0, -0.00410]
 
         # Joint for control
         self.controlJoints = ['shoulder_pan_joint',
@@ -63,22 +67,23 @@ class RobotWithGripper(object):
                               'wrist_1_joint',
                               'wrist_2_joint', 
                               'wrist_3_joint',
-                              'robotiq_85_left_knuckle_joint',
-                              'robotiq_85_right_knuckle_joint',
                               'robotiq_85_left_inner_knuckle_joint',
-                              'robotiq_85_left_finger_tip_joint',
-                              'robotiq_85_right_inner_knuckle_joint',
-                              'robotiq_85_right_finger_tip_joint']
+                              'robotiq_85_right_inner_knuckle_joint']
+        # Finger-EE error tolerance
+        self.pos_err_tolerance = 0.01  # 1cm
+        self.orn_err_tolerance = 0.015 # Approximately 1 deg
 
         # Initial joint value
         self.initialJointValue = {'world_joint': 0,
-                                  'shoulder_pan_joint': 0,
+                                  'shoulder_pan_joint': math.pi/4,
                                   'shoulder_lift_joint': -math.pi/2,
                                   'elbow_joint': math.pi/2,
                                   'wrist_1_joint': -math.pi/2,
-                                  'wrist_2_joint': -math.pi/2,
+                                  'wrist_2_joint': -math.pi/5,
                                   'wrist_3_joint': 0,
-                                  'ee_fixed_joint': 0}
+                                  'ee_fixed_joint': 0,
+                                  'robotiq_85_left_inner_knuckle_joint': 0,
+                                  'robotiq_85_right_inner_knuckle_joint': 0}
         
 
         # Robot start position and orientation
@@ -92,7 +97,6 @@ class RobotWithGripper(object):
 
         # Get robot joint number
         self.numJoints = p.getNumJoints(self.robotID) # The robot has 18 joints (including the gripper)
-        print('Number of joint:{}'.format(self.numJoints))
 
         # Set the initial joint angle of each joint
         for joint_name in self.initialJointValue.keys():
@@ -101,9 +105,9 @@ class RobotWithGripper(object):
         
         ##############################
         # Get Robot Joint Information
-        jointInfoList = [p.getJointInfo(self.robotID, jointID) for jointID in range(self.numJoints)]
-        for jointInfo in jointInfoList:
-            print(jointInfo)
+#        jointInfoList = [p.getJointInfo(self.robotID, jointID) for jointID in range(self.numJoints)]
+#        for jointInfo in jointInfoList:
+#            print(jointInfo)
         ##############################
 
         # Robot joint information
@@ -120,7 +124,6 @@ class RobotWithGripper(object):
             jointLowerLimit = info[8]
             jointUpperLimit = info[9]
             jointMaxForce = info[10]
-            print('{} Max Force: {}'.format(jointName, jointMaxForce))
             jointMaxVelocity = info[11]
             controllable = True if jointName in self.controlJoints else False
             info = jointInfo(jointID,jointName,jointType,jointLowerLimit,
@@ -131,34 +134,75 @@ class RobotWithGripper(object):
 
     def readJointState(self, jointID):
         '''
-        Return the state of the joint: jointPosition, jointVelocity, jointReactionForces, appliedJointMotroTorque
+        Return the state of the joint: jointPosition, jointVelocity, jointReactionForces, appliedJointMotroTorque.
         '''
         return p.getJointState(self.robotID, jointID)
 
 
     def readEndEffectorState(self):
         '''
-        Return the position and orientation (quaternion) of the endeffector
+        Return the position and orientation (quaternion) of the endeffector.
+        Both position and orientation are numpy arrays.
         '''
         ee_state = p.getLinkState(self.robotID, self.eeID)
         
-        return ee_state[0], ee_state[1]
-    
+        return np.array(ee_state[0]), np.array(ee_state[1])
 
-    def goto(self, pos, orn=None):
+
+    def readFingerCenterState(self):
+        '''
+        Return the position and orientation (quaternion) of the center of the two fingers.
+        Both position and orientation are numpy arrays.
+        '''
+        ee_pos, ee_orn = self.readEndEffectorState()
+        ee_orn_mat = tools.getMatrixFromQuaternion(ee_orn)
+        # Transform to the finger frame
+        finger_pos = tools.array2vector(ee_pos) + ee_orn_mat @ tools.array2vector(self.ee_finger_offset)
+        return tools.vector2array(finger_pos), np.array(ee_orn)
+
+
+    def finger_error_flag(goal_pos, goal_orn):
+        '''
+        goal_pos: (3, ) numpy array
+        goal_orn: (4, ) numpy array
+
+        Use the rotation angle between two rotation matrices to calculate the orn error.
+        If the error of the finger is smaller than the threshold, error_bool=True.
+
+        Return: pos_error_bool, orn_erro_bool
+        '''
+
+        finger_pos, finger_orn = self.readFingerCenterState()
+        pos_err = tools.frobenius_norm(np.array(finger_pos), np.array(goal_pos))
+        orn_err = tools.exponential_angle_metric(tools.getMatrixFromQuaternion(finger_orn), tools.getMatrixFromQuaternion(goal_orn))
+
+        if pos_err <= self.pos_err_tolerance and orn_err <= self.orn_err_tolerance:
+            return True
+        else:
+            return False
+
+
+    def joint_error_flag(joint_target_state):
+        '''
+        joint_target_state: ()
+        '''
+        #TODO: Implement joint vector distance with frobenius norm
+        
+    def goto(self, pos, orn):
         '''
         pos: list of 3 floats
         orn: list of 4 floats, in quaternion
-        Make the end-effector reach a given target position in Cartesian world space.
+        Make the center of the finger tip reach a given target position in Cartesian world space.
         '''
-        if orn:
-            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos, targetOrientation=orn)
-            print('joint target pose list: {}'.format(jointTargetPose_list))
-        else:
-            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos)
-            print('joint target pose list: {}'.format(jointTargetPose_list))
+        # Transform to the ee frame
+        ee_pos = tools.array2vector(pos) - tool.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
+        ee_orn = orn
         
-        while True:
+        # TODO: Check the target pose list and delete the pose for the finger.
+        jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, targetOrientation=orn)
+       
+        error_flag = True
+        while error_flag:         
             for jointIdx, jointName in enumerate(self.controlJoints):
                 jointTargetState = jointTargetPose_list[jointIdx]
                 p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
@@ -166,6 +210,7 @@ class RobotWithGripper(object):
                                         maxVelocity=self.joints[jointName].maxVelocity)
             p.stepSimulation()
             time.sleep(1./240.)
+            error_flag = self.joint_error_flag(jointTargetState)
 
 
     def test(self, sim_timesteps=None):
@@ -182,6 +227,9 @@ class RobotWithGripper(object):
 
 
     def debug(self):
+        '''
+        Debug with the joint control window. Only the controllable joints are included.
+        '''
         userParams = dict()
         for name in self.controlJoints:
             joint = self.joints[name]
@@ -209,51 +257,16 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot.urdf"
         rob = RobotWithGripper(robotUrdfPath)
         
-        rob.debug()
+#        rob.test()
+        print(rob.readFingerCenterState())
 
-        # rob.test(10000)
 
-    #     pos, orn = rob.readEndEffectorState()
+#        new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
+#        new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
+#
+#        rob.goto(new_pos, new_orn)
 
-    #     print('#######################')
-    #     print('pos: {} \n'.format(pos))
-    #     print('orn in Euler Angle: {} \n'.format(p.getEulerFromQuaternion(orn)))
-    #     print('#######################')
-
-    #     time.sleep(2)
-
-    #     new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
-    #     new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
-
-    #     rob.goto(new_pos, new_orn)
-
-    #     p.disconnect()
+        p.disconnect()
     except:
         p.disconnect()
-
-
-    # ###############################################
-    # ## set up mimic joints in robotiq_c2 gripper ##
-    # ###############################################
-    # mimicParentName = "robotiq_85_left_knuckle_joint"
-    # mimicChildName = ["robotiq_85_right_knuckle_joint",
-    #                   "robotiq_85_right_finger_joint",
-    #                   "robotiq_85_left_inner_knuckle_joint",
-    #                   "robotiq_85_left_finger_tip_joint",
-    #                   "robotiq_85_right_inner_knuckle_joint",
-    #                   "robotiq_85_right_finger_tip_joint"]
-    # mimicMul = [-1,-1,-1,-1,-1,-1]
-    # mimicChildList = []
-    # parent = self.joints[mimicParentName]
-    # constraints = dict()
-    # for i, name in enumerate(mimicChildName):
-    #     child = joints[name]
-    #     c = p.createConstraint(self.robotID, parent.id,
-    #                            self.robotID, child.id,
-    #                            jointType=p.JOINT_GEAR,
-    #                            jointAxis=[0,0,1],
-    #                            parentFramePosition=[0,0,0],
-    #                            childFramePosition=[0,0,0])
-    #     p.changeConstraint(c, gearRatio=mimicMul[i], maxForce=child.maxForce)
-    #     constraints[name] = c
 
