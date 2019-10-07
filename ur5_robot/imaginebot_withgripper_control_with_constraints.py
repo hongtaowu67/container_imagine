@@ -62,14 +62,16 @@ class RobotWithGripper(object):
         self.ee_finger_offset = [0.10559, 0.0, -0.00410]
 
         # Joint for control
-        self.controlJoints = ['shoulder_pan_joint',
+        self.robotControlJoints = ['shoulder_pan_joint',
                               'shoulder_lift_joint',
                               'elbow_joint', 
                               'wrist_1_joint',
                               'wrist_2_joint', 
-                              'wrist_3_joint',
-                              'robotiq_85_left_inner_knuckle_joint',
-                              'robotiq_85_right_inner_knuckle_joint']
+                              'wrist_3_joint']
+
+        # Finger joint for control
+        self.fingerControlJoints = ['robotiq_85_left_inner_knuckle_joint',
+                                    'robotiq_85_right_inner_knuckle_joint']
 
         # Finger-EE error tolerance
         self.posErrorTolerance = 0.01  # 1cm
@@ -82,7 +84,7 @@ class RobotWithGripper(object):
                                   'shoulder_lift_joint': -math.pi/2,
                                   'elbow_joint': math.pi/2,
                                   'wrist_1_joint': -math.pi/2,
-                                  'wrist_2_joint': -math.pi/5,
+                                  'wrist_2_joint': -math.pi/2,
                                   'wrist_3_joint': 0,
                                   'ee_fixed_joint': 0,
                                   'robotiq_85_left_inner_knuckle_joint': 0,
@@ -117,8 +119,20 @@ class RobotWithGripper(object):
         # It can be called by self.joints[joint_name].id/type/lowerLimit...
         jointTypeList = ["REVOLUTE", "PRISMATIC", "SPHERICAL", "PLANAR", "FIXED"]
 
-        jointInfo = namedtuple("jointInfo", ["id","name","type","lowerLimit","upperLimit","maxForce","maxVelocity","controllable"])
+        jointInfo = namedtuple("jointInfo", ["id","name","type","lowerLimit","upperLimit",
+                               "maxForce","maxVelocity","controllable"])
         self.joints = AttrDict()
+
+        # Joints lower/upper limit
+        self.jointsLowerLimit = []
+        self.jointsUpperLimit = []
+
+        # Joints range
+        self.jointsRange = [2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi, 0.4, 0.4]
+
+        # Joints restpose
+        self.jointsRestPose = [math.pi/4, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0, 0, 0]
+
         for i in range(self.numJoints):
             info = p.getJointInfo(self.robotID, i)
             jointID = info[0]
@@ -126,9 +140,14 @@ class RobotWithGripper(object):
             jointType = jointTypeList[info[2]]
             jointLowerLimit = info[8]
             jointUpperLimit = info[9]
+
+            if jointName in (self.robotControlJoints + self.fingerControlJoints):
+                self.jointsLowerLimit.append(jointLowerLimit)
+                self.jointsUpperLimit.append(jointUpperLimit)
+
             jointMaxForce = info[10]
             jointMaxVelocity = info[11]
-            controllable = True if jointName in self.controlJoints else False
+            controllable = True if jointName in (self.robotControlJoints + self.fingerControlJoints) else False
             info = jointInfo(jointID,jointName,jointType,jointLowerLimit,
                             jointUpperLimit,jointMaxForce,jointMaxVelocity,controllable)
             
@@ -172,7 +191,8 @@ class RobotWithGripper(object):
         Use the rotation angle between two rotation matrices to calculate the orn error.
         If the error of the finger is smaller than the threshold, error_bool=True.
 
-        Return: pos_error_bool, orn_error_bool. True if the error is bigger than the threshold (self.posErrorTolrance, self.ornErrorTolerance).
+        Return: pos_error_bool, orn_error_bool. 
+        True if the error is bigger than the threshold (self.posErrorTolrance, self.ornErrorTolerance).
         '''
         goal_pos = np.array(goal_pos)
         goal_orn = np.array(goal_orn)
@@ -196,8 +216,9 @@ class RobotWithGripper(object):
         joint_error = 0.0
         jointTargetState_list = np.array(jointTargetState_list)
 
-        for control_joint_idx,  control_joint_name in enumerate(self.controlJoints):
-            joint_error += self.readJointState(self.joints[control_joint_name].id)[0] - jointTargetState_list[control_joint_idx]    
+        for control_joint_idx,  control_joint_name in enumerate(self.robotControlJoints):
+            joint_error += self.readJointState(self.joints[control_joint_name].id)[0] \
+                           - jointTargetState_list[control_joint_idx]    
 
         if joint_error <= self.jointErrorTolerance:
             return False
@@ -212,15 +233,24 @@ class RobotWithGripper(object):
         Make the center of the finger tip reach a given target position in Cartesian world space.
         '''
         # Transform to the ee frame
-        ee_pos = tools.array2vector(pos) - tools.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
+        ee_pos = tools.array2vector(pos) \
+                - tools.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
         ee_orn = orn
 
         # Retrun 8 values for the 8 controllable joints 
-        jointTargetState_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, targetOrientation=orn)
+        jointTargetState_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, 
+                                                targetOrientation=orn)#, lowerLimits=self.jointsLowerLimit, 
+#                                                upperLimits=self.jointsUpperLimit, jointRanges=self.jointsRange, 
+#                                                restPoses=self.jointsRestPose)
+        
+        # TODO: Make the lower/higher limit work in the inverse kinematic! There are some problems with
+        # the inverse kinematics as well. Some value cannot be satisfied
+#        import ipdb
+#        ipdb.set_trace(context=7)
 
         error_flag = True
         while error_flag:         
-            for jointIdx, jointName in enumerate(self.controlJoints):
+            for jointIdx, jointName in enumerate(self.robotControlJoints):
                 jointTargetState = jointTargetState_list[jointIdx]
                 p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
                                         targetPosition=jointTargetState, force=self.joints[jointName].maxForce,
@@ -230,13 +260,10 @@ class RobotWithGripper(object):
  
             error_flag = self.jointErrorFlag(jointTargetState_list)
         
-        import ipdb
-        ipdb.set_trace(context=7)
-
-        if self.fingerErrorFlag(pos, orn):
-            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
-        else:
-            print('Finish moving to the goal pos and orn!')
+#        if self.fingerErrorFlag(pos, orn):
+#            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
+#        else:
+#            print('Finish moving to the goal pos and orn!')
 
 
     def test(self, sim_timesteps=None):
@@ -257,16 +284,17 @@ class RobotWithGripper(object):
         Debug with the joint control window. Only the controllable joints are included.
         '''
         userParams = dict()
-        for name in self.controlJoints:
+        for name in self.robotControlJoints:
             joint = self.joints[name]
 
             if name in self.initialJointValue.keys():
-                userParam = p.addUserDebugParameter(name, joint.lowerLimit, joint.upperLimit, self.initialJointValue[name])
+                userParam = p.addUserDebugParameter(name, joint.lowerLimit, joint.upperLimit, 
+                                                    self.initialJointValue[name])
             else:
                 userParam = p.addUserDebugParameter(name, joint.lowerLimit, joint.upperLimit, 0)
             userParams[name] = userParam
         while True:
-            for name in self.controlJoints:
+            for name in self.robotControlJoints:
                 joint = self.joints[name]
                 pose = p.readUserDebugParameter(userParams[name])
                 p.setJointMotorControl2(self.robotID, joint.id, p.POSITION_CONTROL,
@@ -283,17 +311,16 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot.urdf"
         rob = RobotWithGripper(robotUrdfPath)
         
+#        rob.debug()
         rob.test(100)
 
-
         finger_pos, finger_orn =  rob.readFingerCenterState()
-        target_finger_pos = np.array([0.6, 0.0, 0.0])
+        target_finger_pos = np.array([0.0, 0.3, 0.3])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
         
-
         rob.goto(target_finger_pos, target_finger_orn)
 
-        rob.test(1000)
+        rob.test(10000)
 
 #        new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
 #        new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
