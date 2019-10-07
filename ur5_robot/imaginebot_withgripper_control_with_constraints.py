@@ -16,6 +16,7 @@ from collections import namedtuple
 from attrdict import AttrDict
 import math
 import tools
+import numpy as np
 
 
 class RobotWithGripper(object):
@@ -32,7 +33,7 @@ class RobotWithGripper(object):
         # define world
         p.setGravity(0,0,-10)
         # The plane could be interfering with the robot
-        self.planeID = p.loadURDF("plane.urdf")
+#        self.planeID = p.loadURDF("plane.urdf")
 
         # Joint ID
         self.jointID = {'world_joint': 0,
@@ -69,9 +70,11 @@ class RobotWithGripper(object):
                               'wrist_3_joint',
                               'robotiq_85_left_inner_knuckle_joint',
                               'robotiq_85_right_inner_knuckle_joint']
+
         # Finger-EE error tolerance
-        self.pos_err_tolerance = 0.01  # 1cm
-        self.orn_err_tolerance = 0.015 # Approximately 1 deg
+        self.posErrorTolerance = 0.01  # 1cm
+        self.ornErrorTolerance = 0.015 # Approximately 1 deg
+        self.jointErrorTolerance = 0.001 # Each joint has 1 deg tolerance on average
 
         # Initial joint value
         self.initialJointValue = {'world_joint': 0,
@@ -161,7 +164,7 @@ class RobotWithGripper(object):
         return tools.vector2array(finger_pos), np.array(ee_orn)
 
 
-    def finger_error_flag(goal_pos, goal_orn):
+    def fingerErrorFlag(self, goal_pos, goal_orn):
         '''
         goal_pos: (3, ) numpy array
         goal_orn: (4, ) numpy array
@@ -169,24 +172,38 @@ class RobotWithGripper(object):
         Use the rotation angle between two rotation matrices to calculate the orn error.
         If the error of the finger is smaller than the threshold, error_bool=True.
 
-        Return: pos_error_bool, orn_erro_bool
+        Return: pos_error_bool, orn_error_bool. True if the error is bigger than the threshold (self.posErrorTolrance, self.ornErrorTolerance).
         '''
+        goal_pos = np.array(goal_pos)
+        goal_orn = np.array(goal_orn)
 
         finger_pos, finger_orn = self.readFingerCenterState()
         pos_err = tools.frobenius_norm(np.array(finger_pos), np.array(goal_pos))
         orn_err = tools.exponential_angle_metric(tools.getMatrixFromQuaternion(finger_orn), tools.getMatrixFromQuaternion(goal_orn))
 
-        if pos_err <= self.pos_err_tolerance and orn_err <= self.orn_err_tolerance:
-            return True
+        if pos_err <= self.posErrorTolerance and orn_err <= self.ornErrorTolerance:
+            return False 
         else:
+            return True
+
+
+    def jointErrorFlag(self, jointTargetState_list):
+        '''
+        joint_target_state: a (8, ) array defining the target value of 8 controllable joints
+
+        Return: False if the error is smaller than a threshold (self.jointErrorTolerance)
+        '''
+        joint_error = 0.0
+        jointTargetState_list = np.array(jointTargetState_list)
+
+        for control_joint_idx,  control_joint_name in enumerate(self.controlJoints):
+            joint_error += self.readJointState(self.joints[control_joint_name].id)[0] - jointTargetState_list[control_joint_idx]    
+
+        if joint_error <= self.jointErrorTolerance:
             return False
+        else:
+            return True
 
-
-    def joint_error_flag(joint_target_state):
-        '''
-        joint_target_state: ()
-        '''
-        #TODO: Implement joint vector distance with frobenius norm
         
     def goto(self, pos, orn):
         '''
@@ -195,22 +212,31 @@ class RobotWithGripper(object):
         Make the center of the finger tip reach a given target position in Cartesian world space.
         '''
         # Transform to the ee frame
-        ee_pos = tools.array2vector(pos) - tool.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
+        ee_pos = tools.array2vector(pos) - tools.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
         ee_orn = orn
-        
-        # TODO: Check the target pose list and delete the pose for the finger.
-        jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, targetOrientation=orn)
-       
+
+        # Retrun 8 values for the 8 controllable joints 
+        jointTargetState_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, targetOrientation=orn)
+
         error_flag = True
         while error_flag:         
             for jointIdx, jointName in enumerate(self.controlJoints):
-                jointTargetState = jointTargetPose_list[jointIdx]
+                jointTargetState = jointTargetState_list[jointIdx]
                 p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
                                         targetPosition=jointTargetState, force=self.joints[jointName].maxForce,
-                                        maxVelocity=self.joints[jointName].maxVelocity)
+                                        maxVelocity=self.joints[jointName].maxVelocity/5) # keep the maxVelocity small to avoid overshoot in the PD control
             p.stepSimulation()
             time.sleep(1./240.)
-            error_flag = self.joint_error_flag(jointTargetState)
+ 
+            error_flag = self.jointErrorFlag(jointTargetState_list)
+        
+        import ipdb
+        ipdb.set_trace(context=7)
+
+        if self.fingerErrorFlag(pos, orn):
+            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
+        else:
+            print('Finish moving to the goal pos and orn!')
 
 
     def test(self, sim_timesteps=None):
@@ -257,9 +283,17 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot.urdf"
         rob = RobotWithGripper(robotUrdfPath)
         
-#        rob.test()
-        print(rob.readFingerCenterState())
+        rob.test(100)
 
+
+        finger_pos, finger_orn =  rob.readFingerCenterState()
+        target_finger_pos = np.array([0.6, 0.0, 0.0])
+        target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
+        
+
+        rob.goto(target_finger_pos, target_finger_orn)
+
+        rob.test(1000)
 
 #        new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
 #        new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
