@@ -36,7 +36,8 @@ class RobotWithGripper(object):
 #        self.planeID = p.loadURDF("plane.urdf")
 
         # Joint ID
-        self.jointID = {'world_joint': 0,
+        self.jointID = {
+                        'world_joint': 0,
                         'shoulder_pan_joint': 1,
                         'shoulder_lift_joint': 2,
                         'elbow_joint': 3,
@@ -53,7 +54,8 @@ class RobotWithGripper(object):
                         'robotiq_85_left_inner_knuckle_joint': 14,
                         'robotiq_85_left_finger_tip_joint': 15,
                         'robotiq_85_right_inner_knuckle_joint': 16,
-                        'robotiq_85_right_finger_tip_joint': 17}
+                        'robotiq_85_right_finger_tip_joint': 17
+                        }
         
         # End Effector ID
         self.eeID = self.jointID['ee_fixed_joint']
@@ -74,12 +76,13 @@ class RobotWithGripper(object):
                                     'robotiq_85_right_inner_knuckle_joint']
 
         # Finger-EE error tolerance
-        self.posErrorTolerance = 0.01  # 1cm
-        self.ornErrorTolerance = 0.015 # Approximately 1 deg
+        self.posErrorTolerance = 0.1  # 10cm
+        self.ornErrorTolerance = 0.15 # Approximately 10 deg
         self.jointErrorTolerance = 0.001 # Each joint has 1 deg tolerance on average
 
         # Initial joint value
-        self.initialJointValue = {'world_joint': 0,
+        self.initialJointValue = {
+                                  'world_joint': 0,
                                   'shoulder_pan_joint': math.pi/4,
                                   'shoulder_lift_joint': -math.pi/2,
                                   'elbow_joint': math.pi/2,
@@ -88,7 +91,8 @@ class RobotWithGripper(object):
                                   'wrist_3_joint': 0,
                                   'ee_fixed_joint': 0,
                                   'robotiq_85_left_inner_knuckle_joint': 0,
-                                  'robotiq_85_right_inner_knuckle_joint': 0}
+                                  'robotiq_85_right_inner_knuckle_joint': 0
+                                  }
         
 
         # Robot start position and orientation
@@ -225,6 +229,25 @@ class RobotWithGripper(object):
         else:
             return True
 
+
+    def jointLimitFilter(self, jointTargetState_list):
+        """
+        jointTargetState_list: a (8, ) array defining the target value of 8 controllable joints on the UR
+
+        Return: a (8, ) array defining the target value within the allowable joints limit
+
+        """
+        
+        # Only considering joint limit for the UR5 robot
+        jointLimitTargetState_list = np.copy(np.array(jointTargetState_list))
+        for joint_idx, jointTargetState in enumerate(jointTargetState_list[:-2]):
+            if jointTargetState > math.pi:
+                jointLimitTargetState_list[joint_idx] -= math.pi
+            elif jointTargetState < -math.pi:
+                jointLimitTargetState_list[joint_idx] += math.pi 
+
+        return jointLimitTargetState_list
+
         
     def goto(self, pos, orn):
         '''
@@ -236,17 +259,15 @@ class RobotWithGripper(object):
         ee_pos = tools.array2vector(pos) \
                 - tools.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
         ee_orn = orn
-
+        
         # Retrun 8 values for the 8 controllable joints 
         jointTargetState_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=ee_pos, 
-                                                targetOrientation=orn)#, lowerLimits=self.jointsLowerLimit, 
-#                                                upperLimits=self.jointsUpperLimit, jointRanges=self.jointsRange, 
-#                                                restPoses=self.jointsRestPose)
+                                                targetOrientation=orn, lowerLimits=self.jointsLowerLimit[:-2], 
+                                                upperLimits=self.jointsUpperLimit[:-2], jointRanges=self.jointsRange[:-2], 
+                                                restPoses=self.jointsRestPose[:-2])
         
         # TODO: Make the lower/higher limit work in the inverse kinematic! There are some problems with
         # the inverse kinematics as well. Some value cannot be satisfied
-#        import ipdb
-#        ipdb.set_trace(context=7)
 
         error_flag = True
         while error_flag:         
@@ -259,11 +280,16 @@ class RobotWithGripper(object):
             time.sleep(1./240.)
  
             error_flag = self.jointErrorFlag(jointTargetState_list)
+
+        for i in range(500):
+            p.stepSimulation()
+            time.sleep(1./240.)
         
-#        if self.fingerErrorFlag(pos, orn):
-#            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
-#        else:
-#            print('Finish moving to the goal pos and orn!')
+
+        if self.fingerErrorFlag(pos, orn):
+            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
+        else:
+            print('Finish moving to the goal pos and orn!')
 
 
     def test(self, sim_timesteps=None):
@@ -315,9 +341,14 @@ if __name__ == "__main__":
         rob.test(100)
 
         finger_pos, finger_orn =  rob.readFingerCenterState()
-        target_finger_pos = np.array([0.0, 0.3, 0.3])
+        target_finger_pos = np.array([0.6, 0.1, 0.0])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
         
+        rob.goto(target_finger_pos, target_finger_orn)
+        
+        target_finger_pos = np.array([0.0, 0.6, 0.0])
+        target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, math.pi/2])) 
+
         rob.goto(target_finger_pos, target_finger_orn)
 
         rob.test(10000)
