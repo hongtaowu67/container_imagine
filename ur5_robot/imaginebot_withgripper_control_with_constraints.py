@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-'''
-
+"""
 Imaginebot basic setup and control(ur5 robot + robotiq 2f-85 gripper).
 @author: Hongtao Wu
 10/03/2019
-
-'''
+"""
 
 import os
 import time
@@ -33,7 +31,7 @@ class RobotWithGripper(object):
         # define world
         p.setGravity(0,0,-10)
         # The plane could be interfering with the robot
-#        self.planeID = p.loadURDF("plane.urdf")
+        self.planeID = p.loadURDF("plane.urdf")
 
         # Joint ID
         self.jointID = {
@@ -79,6 +77,7 @@ class RobotWithGripper(object):
         self.posErrorTolerance = 0.1  # 10cm
         self.ornErrorTolerance = 0.15 # Approximately 10 deg
         self.jointErrorTolerance = 0.001 # Each joint has 1 deg tolerance on average
+        self.maxControlTimeStep = 2400 # each control has at most 10 seconds to execute
 
         # Initial joint value
         self.initialJointValue = {
@@ -159,27 +158,27 @@ class RobotWithGripper(object):
 
 
     def readJointState(self, jointID):
-        '''
+        """
         Return the state of the joint: jointPosition, jointVelocity, jointReactionForces, appliedJointMotroTorque.
-        '''
+        """
         return p.getJointState(self.robotID, jointID)
 
 
     def readEndEffectorState(self):
-        '''
+        """
         Return the position and orientation (quaternion) of the endeffector.
         Both position and orientation are numpy arrays.
-        '''
+        """
         ee_state = p.getLinkState(self.robotID, self.eeID)
         
         return np.array(ee_state[0]), np.array(ee_state[1])
 
 
     def readFingerCenterState(self):
-        '''
+        """
         Return the position and orientation (quaternion) of the center of the two fingers.
         Both position and orientation are numpy arrays.
-        '''
+        """
         ee_pos, ee_orn = self.readEndEffectorState()
         ee_orn_mat = tools.getMatrixFromQuaternion(ee_orn)
         # Transform to the finger frame
@@ -188,16 +187,14 @@ class RobotWithGripper(object):
 
 
     def fingerErrorFlag(self, goal_pos, goal_orn):
-        '''
+        """
         goal_pos: (3, ) numpy array
         goal_orn: (4, ) numpy array
-
         Use the rotation angle between two rotation matrices to calculate the orn error.
         If the error of the finger is smaller than the threshold, error_bool=True.
-
         Return: pos_error_bool, orn_error_bool. 
         True if the error is bigger than the threshold (self.posErrorTolrance, self.ornErrorTolerance).
-        '''
+        """
         goal_pos = np.array(goal_pos)
         goal_orn = np.array(goal_orn)
 
@@ -212,17 +209,16 @@ class RobotWithGripper(object):
 
 
     def jointErrorFlag(self, jointTargetState_list):
-        '''
+        """
         joint_target_state: a (8, ) array defining the target value of 8 controllable joints
-
         Return: False if the error is smaller than a threshold (self.jointErrorTolerance)
-        '''
+        """
         joint_error = 0.0
         jointTargetState_list = np.array(jointTargetState_list)
 
         for control_joint_idx,  control_joint_name in enumerate(self.robotControlJoints):
-            joint_error += self.readJointState(self.joints[control_joint_name].id)[0] \
-                           - jointTargetState_list[control_joint_idx]    
+            joint_error += abs(self.readJointState(self.joints[control_joint_name].id)[0] \
+                           - jointTargetState_list[control_joint_idx])
 
         if joint_error <= self.jointErrorTolerance:
             return False
@@ -233,9 +229,7 @@ class RobotWithGripper(object):
     def jointLimitFilter(self, jointTargetState_list):
         """
         jointTargetState_list: a (8, ) array defining the target value of 8 controllable joints on the UR
-
         Return: a (8, ) array defining the target value within the allowable joints limit
-
         """
         
         # Only considering joint limit for the UR5 robot
@@ -250,11 +244,11 @@ class RobotWithGripper(object):
 
         
     def goto(self, pos, orn):
-        '''
+        """
         pos: list of 3 floats
         orn: list of 4 floats, in quaternion
         Make the center of the finger tip reach a given target position in Cartesian world space.
-        '''
+        """
         # Transform to the ee frame
         ee_pos = tools.array2vector(pos) \
                 - tools.getMatrixFromQuaternion(orn) @ tools.array2vector(self.ee_finger_offset) 
@@ -270,7 +264,8 @@ class RobotWithGripper(object):
         # the inverse kinematics as well. Some value cannot be satisfied
 
         error_flag = True
-        while error_flag:         
+        simulationTimeStep = 0
+        while error_flag:
             for jointIdx, jointName in enumerate(self.robotControlJoints):
                 jointTargetState = jointTargetState_list[jointIdx]
                 p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
@@ -278,24 +273,22 @@ class RobotWithGripper(object):
                                         maxVelocity=self.joints[jointName].maxVelocity/5) # keep the maxVelocity small to avoid overshoot in the PD control
             p.stepSimulation()
             time.sleep(1./240.)
- 
             error_flag = self.jointErrorFlag(jointTargetState_list)
 
-        for i in range(500):
-            p.stepSimulation()
-            time.sleep(1./240.)
-        
+            simulationTimeStep += 1
+            if simulationTimeStep >= self.maxControlTimeStep:
+                break
 
         if self.fingerErrorFlag(pos, orn):
-            raise ValueError('The gaol pos and orn given are out of the workspace of the robot!')
+            raise ValueError('The goal pos and orn given are out of the workspace of the robot!')
         else:
             print('Finish moving to the goal pos and orn!')
 
 
     def test(self, sim_timesteps=None):
-        '''
+        """
         sim_timesteps: if None, then simulate forever; if not, simulate for the sim_timesteps
-        '''
+        """
         if not sim_timesteps:
             while True:
                 p.stepSimulation()
@@ -306,9 +299,9 @@ class RobotWithGripper(object):
 
 
     def debug(self):
-        '''
+        """
         Debug with the joint control window. Only the controllable joints are included.
-        '''
+        """
         userParams = dict()
         for name in self.robotControlJoints:
             joint = self.joints[name]
@@ -341,24 +334,18 @@ if __name__ == "__main__":
         rob.test(100)
 
         finger_pos, finger_orn =  rob.readFingerCenterState()
-        target_finger_pos = np.array([0.6, 0.1, 0.0])
+        target_finger_pos = np.array([0.6, 0.1, 0.1])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
         
         rob.goto(target_finger_pos, target_finger_orn)
         
-        target_finger_pos = np.array([0.0, 0.6, 0.0])
+        target_finger_pos = np.array([0.0, 0.6, 0.1])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, math.pi/2])) 
 
         rob.goto(target_finger_pos, target_finger_orn)
 
         rob.test(10000)
 
-#        new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
-#        new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
-#
-#        rob.goto(new_pos, new_orn)
-
         p.disconnect()
     except:
         p.disconnect()
-

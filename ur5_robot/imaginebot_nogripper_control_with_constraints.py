@@ -31,7 +31,7 @@ class RobotNoGripper(object):
         # define world
         p.setGravity(0,0,-10)
         # The plane could be interfering with the robot
-        self.planeID = p.loadURDF("plane.urdf")
+        # self.planeID = p.loadURDF("plane.urdf")
 
         # Joint ID
         self.jointID = {'world_joint': 0,
@@ -63,13 +63,24 @@ class RobotNoGripper(object):
                                   'wrist_2_joint': -math.pi/2,
                                   'wrist_3_joint': 0,
                                   'ee_fixed_joint': 0}
-        
+
+         # Joints range
+        self.jointsRange = [2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi, 2*math.pi]
+
+        # Joints restpose
+        self.jointsRestPose = [math.pi/4, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]       
+
         # In the simulation, we consider the torque to be large
         self.maxJointForce = 150
+
+        # jointLimit
+        self.jointsLowerLimit = []
+        self.jointsUpperLimit = []
 
         # Robot start position and orientation
         robotStartPos = [0,0,0]
         robotStartOrn = p.getQuaternionFromEuler([0,0,0])
+
 
         # Load the robot urdf file
         self.robotID = p.loadURDF(robotUrdfPath, robotStartPos, robotStartOrn, 
@@ -105,6 +116,11 @@ class RobotNoGripper(object):
             jointType = jointTypeList[info[2]]
             jointLowerLimit = info[8]
             jointUpperLimit = info[9]
+
+            if jointName in self.controlJoints:
+                self.jointsLowerLimit.append(jointLowerLimit)
+                self.jointsUpperLimit.append(jointUpperLimit)
+
             jointMaxForce = info[10]
             print('{} Max Force: {}'.format(jointName, jointMaxForce))
             jointMaxVelocity = info[11]
@@ -137,14 +153,31 @@ class RobotNoGripper(object):
         orn: list of 4 floats, in quaternion
         Make the end-effector reach a given target position in Cartesian world space.
         '''
+
+
         if orn:
-            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos, targetOrientation=orn)
+            jointTargetPose_list = p.calculateInverseKinematics(self.robotID,
+                                                                self.eeID, 
+                                                                targetPosition=pos,
+                                                                targetOrientation=orn,
+                                                                lowerLimits=self.jointsLowerLimit,
+                                                                upperLimits=self.jointsUpperLimit,
+                                                                jointRanges=self.jointsRange,
+                                                                restPoses=self.jointsRestPose)
+                                                                     
             print('joint target pose list: {}'.format(jointTargetPose_list))
         else:
-            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, self.eeID, targetPosition=pos)
+            jointTargetPose_list = p.calculateInverseKinematics(self.robotID, 
+                                                                self.eeID, 
+                                                                targetPosition=pos,
+                                                                lowerLimits=self.jointsLowerLimit,
+                                                                upperLimits=self.jointsUpperLimit,
+                                                                jointRanges=self.jointsRange,
+                                                                restPoses=self.jointsRestPose)
+
             print('joint target pose list: {}'.format(jointTargetPose_list))
         
-        while True:
+        for i in range(500):
             for jointIdx, jointName in enumerate(self.controlJoints):
                 jointTargetState = jointTargetPose_list[jointIdx]
                 p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
@@ -191,9 +224,9 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot_nogripper.urdf"
         rob = RobotNoGripper(robotUrdfPath)
         
-        rob.debug()
+#        rob.debug()
 
-        # rob.test(100)
+        rob.test(100)
 
     #     pos, orn = rob.readEndEffectorState()
 
@@ -204,10 +237,12 @@ if __name__ == "__main__":
 
     #     time.sleep(2)
 
-    #     new_pos = [pos[0]-0.2, pos[1], pos[2]-0.3]
-    #     new_orn = p.getQuaternionFromEuler([0, math.pi/2, 0])
+        new_pos = [0.6, 0.1, 0.0]
+        new_orn = p.getQuaternionFromEuler([0, math.pi/6, 0])
 
-    #     rob.goto(new_pos, new_orn)
+        rob.goto(new_pos, new_orn)
+
+        print(rob.readEndEffectorState())
 
     #     p.disconnect()
     except:
@@ -238,4 +273,5 @@ if __name__ == "__main__":
     #                            childFramePosition=[0,0,0])
     #     p.changeConstraint(c, gearRatio=mimicMul[i], maxForce=child.maxForce)
     #     constraints[name] = c
+
 
