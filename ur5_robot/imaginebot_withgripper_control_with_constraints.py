@@ -69,8 +69,8 @@ class RobotWithGripper(object):
                               'wrist_2_joint', 
                               'wrist_3_joint']
 
-        # Finger joint for control
-        self.fingerControlJoints = ['robotiq_85_left_inner_knuckle_joint',
+        # Gripper joint for control
+        self.gripperControlJoints = ['robotiq_85_left_inner_knuckle_joint',
                                     'robotiq_85_right_inner_knuckle_joint']
 
         # Finger-EE error tolerance
@@ -78,6 +78,7 @@ class RobotWithGripper(object):
         self.ornErrorTolerance = 0.15 # Approximately 10 deg
         self.jointErrorTolerance = 0.001 # Each joint has 1 deg tolerance on average
         self.maxControlTimeStep = 2400 # each control has at most 10 seconds to execute
+        self.gripperControlTimeStep = 200 # about 1s for gripper to open and close
 
         # Initial joint value
         self.initialJointValue = {
@@ -144,13 +145,13 @@ class RobotWithGripper(object):
             jointLowerLimit = info[8]
             jointUpperLimit = info[9]
 
-            if jointName in (self.robotControlJoints + self.fingerControlJoints):
+            if jointName in (self.robotControlJoints + self.gripperControlJoints):
                 self.jointsLowerLimit.append(jointLowerLimit)
                 self.jointsUpperLimit.append(jointUpperLimit)
 
             jointMaxForce = info[10]
             jointMaxVelocity = info[11]
-            controllable = True if jointName in (self.robotControlJoints + self.fingerControlJoints) else False
+            controllable = True if jointName in (self.robotControlJoints + self.gripperControlJoints) else False
             info = jointInfo(jointID,jointName,jointType,jointLowerLimit,
                             jointUpperLimit,jointMaxForce,jointMaxVelocity,controllable)
             
@@ -243,7 +244,7 @@ class RobotWithGripper(object):
         return jointLimitTargetState_list
 
         
-    def goto(self, pos, orn):
+    def go_to(self, pos, orn):
         """
         pos: list of 3 floats
         orn: list of 4 floats, in quaternion
@@ -284,6 +285,32 @@ class RobotWithGripper(object):
         else:
             print('Finish moving to the goal pos and orn!')
 
+    # TODO : Add measuring the gripper state (if it is not closed completely, then there is something grasped)
+    def close_gripper(self):
+        gripperMaxJointState = [self.joints[jointname].upperLimit for jointname in self.gripperControlJoints]
+        for _ in range(self.gripperControlTimeStep):
+            for jointIdx, jointName in enumerate(self.gripperControlJoints):
+                jointTargetState = gripperMaxJointState[jointIdx]
+                p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
+                                        targetPosition=jointTargetState, force=self.joints[jointName].maxForce,
+                                        maxVelocity=self.joints[jointName].maxVelocity/5)
+            p.stepSimulation()
+            time.sleep(1./240.)
+        print('Gripper closed!')
+
+
+    def open_gripper(self):
+        gripperMaxJointState = [self.joints[jointname].lowerLimit for jointname in self.gripperControlJoints]
+        for _ in range(self.gripperControlTimeStep):
+            for jointIdx, jointName in enumerate(self.gripperControlJoints):
+                jointTargetState = gripperMaxJointState[jointIdx]
+                p.setJointMotorControl2(self.robotID, self.joints[jointName].id, p.POSITION_CONTROL,
+                                        targetPosition=jointTargetState, force=self.joints[jointName].maxForce,
+                                        maxVelocity=self.joints[jointName].maxVelocity/5)
+            p.stepSimulation()
+            time.sleep(1./240.)
+        print('Gripper open!')
+
 
     def test(self, sim_timesteps=None):
         """
@@ -303,7 +330,7 @@ class RobotWithGripper(object):
         Debug with the joint control window. Only the controllable joints are included.
         """
         userParams = dict()
-        for name in self.robotControlJoints:
+        for name in self.gripperControlJoints:
             joint = self.joints[name]
 
             if name in self.initialJointValue.keys():
@@ -313,7 +340,7 @@ class RobotWithGripper(object):
                 userParam = p.addUserDebugParameter(name, joint.lowerLimit, joint.upperLimit, 0)
             userParams[name] = userParam
         while True:
-            for name in self.robotControlJoints:
+            for name in self.gripperControlJoints:
                 joint = self.joints[name]
                 pose = p.readUserDebugParameter(userParams[name])
                 p.setJointMotorControl2(self.robotID, joint.id, p.POSITION_CONTROL,
@@ -330,21 +357,33 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot.urdf"
         rob = RobotWithGripper(robotUrdfPath)
         
-#        rob.debug()
+        record_process = True
+        # Save mp4 video
+        if record_process:
+            save_mp4_dir = '/home/hongtao/Desktop'
+            today = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+            mp4FileName = 'ur5_test.mp4'
+            mp4FilePath = os.path.join(save_mp4_dir, mp4FileName)
+            p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4FilePath)
+
+        # rob.debug()
         rob.test(100)
 
         finger_pos, finger_orn =  rob.readFingerCenterState()
         target_finger_pos = np.array([0.6, 0.1, 0.1])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
         
-        rob.goto(target_finger_pos, target_finger_orn)
+        rob.go_to(target_finger_pos, target_finger_orn)
         
+        rob.close_gripper()
+
         target_finger_pos = np.array([0.0, 0.6, 0.1])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, math.pi/2])) 
 
-        rob.goto(target_finger_pos, target_finger_orn)
+        rob.go_to(target_finger_pos, target_finger_orn)
+        rob.open_gripper()
 
-        rob.test(10000)
+        rob.test(500)
 
         p.disconnect()
     except:
