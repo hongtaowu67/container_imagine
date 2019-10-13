@@ -16,6 +16,8 @@ import math
 import tools
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 
 class RobotWithGripper(object):
     def __init__(self, robot_urdf):
@@ -24,15 +26,56 @@ class RobotWithGripper(object):
         self.serverMode = p.GUI # GUI/DIRECT
 
         # connect to engine servers
-        physicsClient = p.connect(self.serverMode)
+        self.physicsClient = p.connect(self.serverMode)
         # add search path for loadURDF
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-
-        # define world
+        
+        # Define world
         p.setGravity(0,0,-10)
         # The plane could be interfering with the robot
         self.planeID = p.loadURDF("plane.urdf")
 
+        # Robot start position and orientation
+        robotStartPos = [0,0,0.2]
+        robotStartOrn = p.getQuaternionFromEuler([0,0,0])
+
+        # Load the robot urdf file
+        self.robotID = p.loadURDF(robotUrdfPath, robotStartPos, robotStartOrn, 
+                            flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT) # This will discord self-collision between a child link and any of its ancestors.
+
+
+        # TODO: Add Debug Camera
+        p.resetDebugVisualizerCamera(cameraDistance=1.5,
+                                     cameraYaw=0,
+                                     cameraPitch=-60,
+                                     cameraTargetPosition=[0.5, 0 ,0])
+
+        # Add camera
+        self._camTargetPos = [0.5, 0, 0]
+        self._camDistance = 0.75
+        self._camYaw = 90.0
+        self._camPitch = -90.0
+        self._camRoll = 0.0
+        self._upAxisIndex = 2
+        self._pixelWidth = 320
+        self._pixelHeight = 200
+        self._aspectRatio = self._pixelWidth / self._pixelHeight
+        self._nearPlane = 0.05
+        self._farPlane = 10
+        self._fov = 60  # field of view
+        self._viewMatrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=self._camTargetPos,
+                                                               distance=self._camDistance,
+                                                               yaw=self._camYaw,
+                                                               pitch=self._camPitch, 
+                                                               roll=self._camRoll,
+                                                               upAxisIndex=self._upAxisIndex)  
+
+        self._projectionMatrix = p.computeProjectionMatrixFOV(self._fov, 
+                                                              self._aspectRatio, 
+                                                              self._nearPlane, 
+                                                              self._farPlane)
+
+        
         # Joint ID
         self.jointID = {
                         'world_joint': 0,
@@ -93,16 +136,6 @@ class RobotWithGripper(object):
                                   'robotiq_85_left_inner_knuckle_joint': 0,
                                   'robotiq_85_right_inner_knuckle_joint': 0
                                   }
-        
-
-        # Robot start position and orientation
-        robotStartPos = [0,0,0]
-        robotStartOrn = p.getQuaternionFromEuler([0,0,0])
-
-        # Load the robot urdf file
-        self.robotID = p.loadURDF(robotUrdfPath, robotStartPos, robotStartOrn, 
-                            flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT) # This will discord self-collision between a child link and any of its ancestors.
-
 
         # Get robot joint number
         self.numJoints = p.getNumJoints(self.robotID) # The robot has 18 joints (including the gripper)
@@ -287,6 +320,9 @@ class RobotWithGripper(object):
 
     # TODO : Add measuring the gripper state (if it is not closed completely, then there is something grasped)
     def close_gripper(self):
+        """
+        Close gripper to the gripper limit.
+        """
         gripperMaxJointState = [self.joints[jointname].upperLimit for jointname in self.gripperControlJoints]
         for _ in range(self.gripperControlTimeStep):
             for jointIdx, jointName in enumerate(self.gripperControlJoints):
@@ -300,6 +336,9 @@ class RobotWithGripper(object):
 
 
     def open_gripper(self):
+        """
+        Open gripper to the gripper limit.
+        """
         gripperMaxJointState = [self.joints[jointname].lowerLimit for jointname in self.gripperControlJoints]
         for _ in range(self.gripperControlTimeStep):
             for jointIdx, jointName in enumerate(self.gripperControlJoints):
@@ -310,6 +349,25 @@ class RobotWithGripper(object):
             p.stepSimulation()
             time.sleep(1./240.)
         print('Gripper open!')
+
+
+    def grab_frame(self):
+        """
+        Grab the camera frame.
+        
+        Return: rgb image and depth image
+        """
+        img_arr = p.getCameraImage(self._pixelWidth,
+                            self._pixelHeight,
+                            self._viewMatrix,
+                            self._projectionMatrix,
+                            shadow=True,
+                            renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        
+        rgb_img = np.reshape(img_arr[2], (self._pixelHeight, self._pixelWidth, 4))[:, :, :3]
+        depth_img = np.reshape(img_arr[3], (self._pixelHeight, self._pixelWidth))
+
+        return rgb_img, depth_img
 
 
     def test(self, sim_timesteps=None):
@@ -323,6 +381,16 @@ class RobotWithGripper(object):
             for i in range(sim_timesteps):
                 p.stepSimulation()
                 time.sleep(1./240.)
+
+
+    def display(self, rgb, depth):
+        """
+        Display the rgb and depth images.
+        """
+        f, (ax1, ax2) = plt.subplots(1,2)
+        ax1.imshow(rgb)
+        ax2.imshow(depth, cmap='gray')
+        plt.show()
 
 
     def debug(self):
@@ -357,7 +425,7 @@ if __name__ == "__main__":
         robotUrdfPath = "./urdf/imaginebot.urdf"
         rob = RobotWithGripper(robotUrdfPath)
         
-        record_process = True
+        record_process = False 
         # Save mp4 video
         if record_process:
             save_mp4_dir = '/home/hongtao/Desktop'
@@ -371,19 +439,22 @@ if __name__ == "__main__":
 
         finger_pos, finger_orn =  rob.readFingerCenterState()
         target_finger_pos = np.array([0.6, 0.1, 0.1])
-        target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0])) 
-        
+        target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, 0]))
         rob.go_to(target_finger_pos, target_finger_orn)
-        
         rob.close_gripper()
+
+        rgb, depth = rob.grab_frame()
 
         target_finger_pos = np.array([0.0, 0.6, 0.1])
         target_finger_orn = np.array(p.getQuaternionFromEuler([0, math.pi / 2, math.pi/2])) 
-
         rob.go_to(target_finger_pos, target_finger_orn)
         rob.open_gripper()
 
-        rob.test(500)
+        rgb, depth = rob.grab_frame()
+        
+        rob.display(rgb, depth)
+
+        rob.test()
 
         p.disconnect()
     except:
