@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 
 """
-Code for processing the raw model for convex decomposition and writing the URDF file
+Processing the raw model for convex decomposition and writing the URDF file.
 The processed model and the URDF file will be saved in ../model
-@author: Hongtao
+@author: Hongtao Wu
 Nov 05, 2019
 """
 import os
@@ -51,6 +51,7 @@ def write_urdf(urdf_path, obj_original_file, obj_vhacd_file, mass=0.0, origin_x=
     - obj_original_file: the file name of the original file, e.g., cup_0003.obj
     - obj_vhacd_file: the filename of the vhacd file, e.g., cup_0003_vhacd.obj
     """
+    
     f = open(urdf_path, 'w+')
     obj_name = obj_original_file.split('.')[0]
 
