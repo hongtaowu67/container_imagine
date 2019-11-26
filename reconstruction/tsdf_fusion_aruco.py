@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 """
-A wrapper code for running TSDF fusion of several RGBD frame.
+A wrapper code for running TSDF fusion of several RGBD frame. The base frame is at the ArUco tag.
 TSDF fusion sourced from: https://github.com/andyzeng/tsdf-fusion
 General code sourced from: https://github.com/RobotLocomotion/spartan/blob/854b26e3af75910ef57b874db7853abd4249543e/src/catkin_projects/fusion_server/src/fusion_server/tsdf_fusion.py#L126
 @ author: Hongtao Wu
-Nov 09. 2019
-[WIP]
+Nov 23. 2019
 """
-
-
 
 import os
 import subprocess
@@ -21,61 +18,6 @@ from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
 
-# import spartan.utils.utils as spartan_utils
-
-
-# def format_data_for_tsdf(image_folder):
-#     """
-#     Processes the data into the format needed for tsdf-fusion algorithm
-#     """
-
-#     # image_folder = os.path.join(data_folder, 'images')
-#     camera_info_yaml = os.path.join(image_folder, "camera_info.yaml")
-
-
-#     camera_info = spartan_utils.getDictFromYamlFilename(camera_info_yaml)
-
-#     K_matrix = camera_info['camera_matrix']['data']
-#     # print K_matrix
-#     n = K_matrix[0]
-
-#     def sci(n):
-#       return "{:.8e}".format(n)
-
-#     camera_intrinsics_out = os.path.join(image_folder,"camera-intrinsics.txt")
-#     with open(camera_intrinsics_out, 'w') as the_file:
-#         the_file.write(" "+sci(K_matrix[0])+"    "+sci(K_matrix[1])+"    "+sci(K_matrix[2])+"   \n")
-#         the_file.write(" "+sci(K_matrix[3])+"    "+sci(K_matrix[4])+"    "+sci(K_matrix[5])+"   \n")
-#         the_file.write(" "+sci(K_matrix[6])+"    "+sci(K_matrix[7])+"    "+sci(K_matrix[8])+"   \n") 
-
-
-#     ### HANDLE POSES
-
-#     pose_data_yaml = os.path.join(image_folder, "pose_data.yaml")
-#     with open(pose_data_yaml, 'r') as stream:
-#         try:
-#             pose_data_dict = yaml.load(stream)
-#         except yaml.YAMLError as exc:
-#             print(exc)
-
-#     print pose_data_dict[0]
-
-#     for i in pose_data_dict:
-#         # print i
-#         # print pose_data_dict[i]
-#         pose4 = spartan_utils.homogenous_transform_from_dict(pose_data_dict[i]['camera_to_world'])
-#         depth_image_filename = pose_data_dict[i]['depth_image_filename']
-#         prefix = depth_image_filename.split("depth")[0]
-#         print prefix
-#         pose_file_name = prefix+"pose.txt"
-#         pose_file_full_path = os.path.join(image_folder, pose_file_name)
-#         with open(pose_file_full_path, 'w') as the_file:
-#             the_file.write(" "+sci(pose4[0,0])+"     "+sci(pose4[0,1])+"     "+sci(pose4[0,2])+"     "+sci(pose4[0,3])+"    \n")
-#             the_file.write(" "+sci(pose4[1,0])+"     "+sci(pose4[1,1])+"     "+sci(pose4[1,2])+"     "+sci(pose4[1,3])+"    \n")
-#             the_file.write(" "+sci(pose4[2,0])+"     "+sci(pose4[2,1])+"     "+sci(pose4[2,2])+"     "+sci(pose4[2,3])+"    \n")
-#             the_file.write(" "+sci(pose4[3,0])+"     "+sci(pose4[3,1])+"     "+sci(pose4[3,2])+"     "+sci(pose4[3,3])+"    \n")
-
-
 
 def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, output_dir=None, voxel_grid_origin_x=0.0,
     voxel_grid_origin_y=0.0, voxel_grid_origin_z=0.0, voxel_size=0.006,
@@ -87,7 +29,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         output_dir = os.path.dirname(image_folder)
         print "output_dir: ", output_dir
 
-    tsdf_executable = os.path.join(tsdf_fusion_dir, 'demo')
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'demo_aruco') # The base frame is at the ArUco tag
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
 
@@ -95,10 +37,10 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
 
 
     if fast_tsdf_settings:
-        voxel_size = 0.005
-        voxel_grid_dim_x = 300
-        voxel_grid_dim_y = 300
-        voxel_grid_dim_z = 300
+        voxel_size = 0.004
+        voxel_grid_dim_x = 180
+        voxel_grid_dim_y = 100
+        voxel_grid_dim_z = 100
         
     
     cmd += " " + str(voxel_size)
@@ -236,8 +178,8 @@ if __name__ == "__main__":
     image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data/rgbd-frames")
     camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data/camera-intrinsics.txt")
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=-0.13, voxel_grid_origin_y=0.0, voxel_grid_origin_z=0.66, fast_tsdf_settings=True)
+        voxel_grid_origin_x=-0.3, voxel_grid_origin_y=0.005, voxel_grid_origin_z=-0.13, fast_tsdf_settings=True)
 
     tsdf_bin_filename = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
-    tsdf_mesh_filename = os.path.join(tsdf_fusion_dir, 'model/test_1124_1.ply')
+    tsdf_mesh_filename = os.path.join(tsdf_fusion_dir, 'model/test_1124_aruco.ply')
     convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename)
