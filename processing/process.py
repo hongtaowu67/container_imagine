@@ -38,8 +38,6 @@ def run_vhacd(vhacd_dir, input_file, output_file, log='log.txt', resolution=5000
     process.wait()
     elapsed = time.time() - start_time
 
-    os.remove(log)
-
     print "V-HACD took %d seconds" %(elapsed)
 
 
@@ -94,14 +92,16 @@ def write_urdf(urdf_path, obj_original_file, obj_vhacd_file, mass=0.0, origin_x=
 if __name__ == '__main__':
     start_time = time.time()
     root_dir = '/home/hongtao/src/cup_imagine'
+    object_subdir = '1127_bigcuptapeglass'
+    object_name = object_subdir + '_mesh_debug_0'
     vhacd_dir = os.path.join(root_dir, 'processing')
-    input_file = os.path.join(root_dir, 'model/cup_0003.obj')
-    output_file = os.path.join(root_dir,'model/cup_0003_vhacd.obj')
+    input_file = os.path.join(root_dir, 'model', object_subdir, object_name + '.obj') 
+    output_file = os.path.join(root_dir, 'model', object_subdir, object_name + '_vhacd.obj')
     run_vhacd(vhacd_dir, input_file, output_file)
 
-    urdf_path = os.path.join(root_dir, 'model/cup_0003.urdf')
-    obj_original_file = 'cup_0003.obj'
-    obj_vhacd_file = 'cup_0003_vhacd.obj'
+    urdf_path = os.path.join(root_dir, 'model', object_subdir, object_name + '.urdf')
+    obj_original_file = object_name + '.obj'
+    obj_vhacd_file = object_name + '_vhacd.obj'
     write_urdf(urdf_path, obj_original_file, obj_vhacd_file)
     process_time = time.time() - start_time
     print("Total process time: ", process_time)

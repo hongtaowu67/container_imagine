@@ -51,6 +51,7 @@ class Containability(object):
         self.sphere_drop_orn = p.getQuaternionFromEuler([0, 0, 0])
         self.sphere_drop_pos = []
         self.sphere_in_drop_pos = []
+        self.sphere_drop_z = 0
 
         # Set the world
         physicsClient = p.connect(p.GUI)
@@ -70,9 +71,10 @@ class Containability(object):
         p.changeDynamics(self.plane_id, -1, restitution=self.plane_restitution)
 
         # Load object
-        obj_zero_pos = obj_zero_pos
-        obj_zero_orn = p.getQuaternionFromEuler(obj_zero_orn)
-        self.obj_id = p.loadURDF(self.obj_urdf, basePosition=obj_zero_pos, baseOrientation=obj_zero_orn, useFixedBase=True)
+        self.obj_zero_pos = obj_zero_pos
+        self.obj_zero_orn = p.getQuaternionFromEuler(obj_zero_orn) # Quaternion
+        self.obj_id = p.loadURDF(self.obj_urdf, basePosition=self.obj_zero_pos, baseOrientation=self.obj_zero_orn, 
+                useFixedBase=True)
         p.changeDynamics(self.obj_id, -1, restitution=self.object_restitution)
 
         # Get the bounding box of the cup
@@ -82,17 +84,17 @@ class Containability(object):
         if self.obj_curr_aabb[0][2] <= 0.1:
             p.resetBasePositionAndOrientation(self.obj_id, 
                     posObj=(0, 0, -self.obj_curr_aabb[0][2]+0.1),
-                    ornObj=obj_zero_orn)
+                    ornObj=self.obj_zero_orn)
             self.obj_curr_aabb = p.getAABB(self.obj_id)
 
         # Reset debug camera postion
-        p.resetDebugVisualizerCamera(2.0, 75, -50, [0, 0, 0.5])
+        p.resetDebugVisualizerCamera(0.5, 75, -50, [0, 0, 1])
 
         # Create constraint on the cup to fix its position
         constarin_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                parentFramePosition=[0, 0, 0], childFramePosition=obj_zero_pos,
+                parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos,
                 parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
-                childFrameOrientation=obj_zero_orn)
+                childFrameOrientation=self.obj_zero_orn)
 
 
     def load_sphere(self):
@@ -115,7 +117,7 @@ class Containability(object):
         obj_aabb_xy_range = [abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(2)]
         
         # Dropping from 1cm above the object
-        sphere_drop_z = obj_curr_aabb[1][2] + 0.01
+        self.sphere_drop_z = obj_curr_aabb[1][2] + 0.01
 
         sphere_per_length = math.sqrt(self.sphere_num/(obj_aabb_xy_range[0] * obj_aabb_xy_range[1]))
 
@@ -134,12 +136,12 @@ class Containability(object):
             x_idx = i % x_sphere_num
 
             try:
-                sphere_start_pos = (sphere_drop_x[x_idx], sphere_drop_y[y_idx], sphere_drop_z)
+                sphere_start_pos = (sphere_drop_x[x_idx], sphere_drop_y[y_idx], self.sphere_drop_z)
             except:
                 # For those out of range, position the sphere in a random xy in a higher layer
                 sphere_start_pos = (obj_aabb_xy_center[0] + np.random.random() * obj_aabb_xy_range[0]/2, \
                                     obj_aabb_xy_center[1] + np.random.random() * obj_aabb_xy_range[1]/2, \
-                                    sphere_drop_z + 0.05)
+                                    self.sphere_drop_z + 0.05)
             
             self.sphere_drop_pos.append(sphere_start_pos)
             p.resetBasePositionAndOrientation(self.sphere_id[i], 
@@ -215,8 +217,7 @@ class Containability(object):
         # Calculate how many percentage of the spheres are in the cup
         sphere_num_percentage = sphere_in_box_num / self.sphere_num
 
-        # Disconnect the 
-        p.disconnect()
+
 
         if sphere_num_percentage > self.sphere_in_percentage_threshold:
             print("#####################################")
@@ -231,16 +232,53 @@ class Containability(object):
             self.containability = False
         
         return self.containability
+    
 
+    def find_drop_center(self):
+        """ Find the center to drop bean """
+        if len(self.sphere_in_drop_pos) < 1:
+            print("No sphere remains in the object after drops!")
+            return None
+        else:
+            self.sphere_in_drop_pos = np.array(self.sphere_in_drop_pos)
+            x = np.mean(self.sphere_in_drop_pos[:, 0])
+            y = np.mean(self.sphere_in_drop_pos[:, 1])
+            z = self.sphere_drop_z
+            drop_center_curr_frame = np.array([x, y, z])
+            
+            # Debug
+            p.loadURDF(sphere_urdf, basePosition=[x, y, z])
+
+            # Original frame 2 current frame
+            R = np.reshape(np.array(p.getMatrixFromQuaternion(self.obj_zero_orn)), (3, 3))
+            t = self.obj_zero_pos
+
+            drop_center_original_frame = np.linalg.inv(R) @ (drop_center_curr_frame - np.array(t)).T
+
+            return drop_center_original_frame
+
+
+    def disconnet(self):
+        # Disconnect the 
+        p.disconnect()
+
+        
 
 # Test
 if __name__ == "__main__":
 
     # Object information
-    obj_name = "cup_0003"
-    obj_urdf = "/home/hongtao/Dropbox/spirit-dictionary/dataset/cup_imagine/cup_physical_properties/" + \
-    str(obj_name) + "/" + str(obj_name) + ".urdf"
+    model_root_dir = "/home/hongtao/src/cup_imagine/model"
+    object_subdir = '1127_bigcuptapeglass'
+    object_name = object_subdir + '_mesh_debug_0'
+    obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
+    print('URDF: ', obj_urdf)
 
-    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[math.pi/2, 0, 0])
+    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=True, record_process=False)
 
     containable_affordance = C.get_containability()
+
+    drop_spot = C.find_drop_center()
+    print("Dropping at: {}".format(drop_spot))
+
+    C.disconnet()

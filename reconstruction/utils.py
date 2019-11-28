@@ -14,9 +14,11 @@ Convert tsdf to ply source code: https://github.com/RobotLocomotion/spartan/blob
 @author: Hongtao Wu
 Nov 25, 2019
 """
-
+import time
+import array
 import numpy as np
 import pcl
+from skimage import measure
 from plyfile import PlyData, PlyElement
 
 
@@ -236,5 +238,5 @@ def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
 
     print "Converting to ply format and writing to file took %d s" % (time.time() - start_time)
 
-    return mesh_points, tsdf, voxelGridOrigin, voxelSize
+    # return mesh_points, tsdf, voxelGridOrigin, voxelSize
 
