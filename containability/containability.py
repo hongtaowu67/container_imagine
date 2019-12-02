@@ -269,12 +269,12 @@ if __name__ == "__main__":
 
     # Object information
     model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1127_bigcuptapeglass'
-    object_name = object_subdir + '_mesh_debug_0'
+    object_subdir = '1127_cupsmalltapeglass'
+    object_name = object_subdir + '_mesh_debug_1'
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     print('URDF: ', obj_urdf)
 
-    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=True, record_process=False)
+    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=False, record_process=False)
 
     containable_affordance = C.get_containability()
 
