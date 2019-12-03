@@ -26,7 +26,7 @@ def find_pose(*args):
 if __name__ == "__main__":
         # Object information
     model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1127_cupsmalltapeglass'
+    object_subdir = '1202_papercupwithbluecupmanipulator'
     object0_name = object_subdir + '_mesh_debug_0'
     object1_name = object_subdir + '_mesh_debug_1'
     obj0_urdf = os.path.join(model_root_dir, object_subdir, object0_name + '.urdf')
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     find_pose(obj0_urdf, obj1_urdf)
     sphere_urdf = "/home/hongtao/Dropbox/spirit-dictionary/dataset/general_object/sphere_mini.urdf"
-    p.loadURDF(sphere_urdf, basePosition=[0.22067185, 0.130192,  0.11523071])
+    p.loadURDF(sphere_urdf, basePosition=[0.211455,  0.150288, -0.07880902])
     # p.loadURDF(sphere_urdf, basePosition=[0.22587525, 0.129635,   0.11165962])
 
     import ipdb; ipdb.set_trace()

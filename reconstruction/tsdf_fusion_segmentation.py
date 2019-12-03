@@ -31,7 +31,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         output_dir = os.path.dirname(image_folder)
         print "output_dir: ", output_dir
 
-    tsdf_executable = os.path.join(tsdf_fusion_dir, 'demo_aruco') # The base frame is at the ArUco tag, 30 frames
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'demo_aruco_30') # The base frame is at the ArUco tag, 30 frames
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
 
@@ -224,11 +224,11 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
 if __name__ == "__main__":
     tsdf_fusion_dir = "/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion"
     model_output_dir = '/home/hongtao/src/cup_imagine/model'
-    object_name = '1201_tallbottletoy'
+    object_name = '1127_cupsmalltapeglass'
     image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "rgbd-frames")
     camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "camera-intrinsics.txt")
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=0.0, voxel_grid_origin_y=0.03, voxel_grid_origin_z=-0.2, fast_tsdf_settings=True)
+        voxel_grid_origin_x=0.0, voxel_grid_origin_y=0.027, voxel_grid_origin_z=-0.2, fast_tsdf_settings=True)
 
     tsdf_bin_file = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
     tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')

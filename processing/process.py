@@ -93,7 +93,7 @@ if __name__ == '__main__':
     start_time = time.time()
     root_dir = '/home/hongtao/src/cup_imagine'
     object_subdir = '1127_cupsmalltapeglass'
-    object_name = object_subdir + '_mesh_debug_1'
+    object_name = object_subdir + '_mesh_debug_0'
     vhacd_dir = os.path.join(root_dir, 'processing')
     input_file = os.path.join(root_dir, 'model', object_subdir, object_name + '.obj') 
     output_file = os.path.join(root_dir, 'model', object_subdir, object_name + '_vhacd.obj')

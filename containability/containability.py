@@ -29,7 +29,7 @@ class Containability(object):
         super(Containability, self).__init__()
         # Hyperparameter
         self.sphere_num = 225  # sphere number needs to be a 
-        self.sphere_in_percentage_threshold = 0.2
+        self.sphere_in_percentage_threshold = 0.1
         self.sphere_in_percentage = 0.0
 
         # Restitution
@@ -182,6 +182,9 @@ class Containability(object):
         # Reset sphere position
         self.reset_sphere_drop(self.obj_curr_aabb)
 
+        ####### Get OBB of the object ########
+        ####### Get CoM of the object ########
+
         ########################### Drop Sphere Into ############################
 
         for i in range(self.simulation_iteration):
@@ -253,7 +256,8 @@ class Containability(object):
             R = np.reshape(np.array(p.getMatrixFromQuaternion(self.obj_zero_orn)), (3, 3))
             t = self.obj_zero_pos
 
-            drop_center_original_frame = np.linalg.inv(R) @ (drop_center_curr_frame - np.array(t)).T
+            # drop_center_original_frame = np.linalg.inv(R) @ (drop_center_curr_frame - np.array(t)).T
+            drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - np.array(t)).T)
 
             return drop_center_original_frame
 
@@ -270,11 +274,11 @@ if __name__ == "__main__":
     # Object information
     model_root_dir = "/home/hongtao/src/cup_imagine/model"
     object_subdir = '1127_cupsmalltapeglass'
-    object_name = object_subdir + '_mesh_debug_1'
+    object_name = object_subdir + '_mesh_debug_0'
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     print('URDF: ', obj_urdf)
 
-    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=False, record_process=False)
+    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=True, record_process=False)
 
     containable_affordance = C.get_containability()
 
