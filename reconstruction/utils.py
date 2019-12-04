@@ -97,6 +97,7 @@ def segment_aabb(points, ply_output_prefix):
 
     # Filtered point
     cloud_filtered = pcl.PointCloud()
+    # cloud_filtered = cloud
     cloud_filtered.from_array(np.delete(points, plane_indices, axis=0))
 
     i = 0
@@ -105,8 +106,8 @@ def segment_aabb(points, ply_output_prefix):
     # Euclidean Cluster
     tree = cloud_filtered.make_kdtree()
     ec = cloud_filtered.make_EuclideanClusterExtraction()
-    ec.set_ClusterTolerance(0.02)
-    ec.set_MinClusterSize(100)
+    ec.set_ClusterTolerance(0.015)
+    ec.set_MinClusterSize(200)
     ec.set_MaxClusterSize(25000)
     ec.set_SearchMethod(tree)
     cluster_indices = ec.Extract()

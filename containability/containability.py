@@ -29,7 +29,7 @@ class Containability(object):
         super(Containability, self).__init__()
         # Hyperparameter
         self.sphere_num = 225  # sphere number needs to be a 
-        self.sphere_in_percentage_threshold = 0.1
+        self.sphere_in_percentage_threshold = 0.08
         self.sphere_in_percentage = 0.0
 
         # Restitution
@@ -105,7 +105,7 @@ class Containability(object):
         # Set up sphere
         for i in range(self.sphere_num):
             sphere = p.loadURDF(sphere_urdf)
-            p.changeDynamics(sphere, -1, restitution=self.sphere_restitution)
+            p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, lateralFriction=0.1)
 
             self.sphere_id.append(sphere)
 
@@ -184,6 +184,7 @@ class Containability(object):
 
         ####### Get OBB of the object ########
         ####### Get CoM of the object ########
+        # import ipdb; ipdb.set_trace()
 
         ########################### Drop Sphere Into ############################
 
@@ -273,8 +274,8 @@ if __name__ == "__main__":
 
     # Object information
     model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1127_cupsmalltapeglass'
-    object_name = object_subdir + '_mesh_debug_0'
+    object_subdir = '1127_twocupsglass'
+    object_name = object_subdir + '_mesh_debug_1'
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     print('URDF: ', obj_urdf)
 

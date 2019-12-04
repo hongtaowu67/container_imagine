@@ -224,7 +224,7 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
 if __name__ == "__main__":
     tsdf_fusion_dir = "/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion"
     model_output_dir = '/home/hongtao/src/cup_imagine/model'
-    object_name = '1127_cupsmalltapeglass'
+    object_name = '1201_papercupwithcup'
     image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "rgbd-frames")
     camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "camera-intrinsics.txt")
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
