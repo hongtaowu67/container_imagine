@@ -18,7 +18,7 @@ import time
 from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
-from utils import segment_aabb, convert_tsdf_to_ply
+from utils import segment_aabb_noplaneseg, convert_tsdf_to_ply
 
 
 def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, output_dir=None, voxel_grid_origin_x=0.0,
@@ -39,10 +39,10 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
 
 
     if fast_tsdf_settings:
-        voxel_size = 0.004
-        voxel_grid_dim_x = 100
-        voxel_grid_dim_y = 100
-        voxel_grid_dim_z = 100
+        voxel_size = 0.01
+        voxel_grid_dim_x = 150
+        voxel_grid_dim_y = 50
+        voxel_grid_dim_z = 150
         
     
     cmd += " " + str(voxel_size)
@@ -67,6 +67,59 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
 
     print "tsdf-fusion took %d seconds" %(elapsed)
 
+
+# def segment_tsdf(tsdf_bin_file, tsdf_mesh_file, ply_output_prefix, obj_ply_output_prefix):
+#     """
+#     1. Convert tsdf to mesh (ply)
+#     2. Segment the mesh into individual objects
+#     Converts the tsdf binary file to a mesh file in ply format
+#     The indexing in the tsdf is
+#     (x,y,z) <--> (x + y * dim_x + z * dim_x * dim_y)
+#     """
+
+#     mesh_points, tsdf_segment, voxelGridOrigin, voxelSize = convert_tsdf_to_ply(tsdf_bin_file, tsdf_mesh_file)
+
+#     # Segment the mesh points
+#     objects_aabb = segment_aabb(mesh_points, ply_output_prefix)
+    
+#     for obj_id, obj_aabb in enumerate(objects_aabb):
+#         min_x_in_voxel = max(int((obj_aabb[0][0] - voxelGridOrigin[0]) / voxelSize) - 3, 0)
+#         max_x_in_voxel = min(int((obj_aabb[1][0] - voxelGridOrigin[0]) / voxelSize) + 3, voxelGridDim[0])
+#         min_y_in_voxel = max(int((obj_aabb[0][1] - voxelGridOrigin[1]) / voxelSize) - 10, 0)
+#         max_y_in_voxel = min(int((obj_aabb[1][1] - voxelGridOrigin[1]) / voxelSize) + 10, voxelGridDim[1])
+#         min_z_in_voxel = max(int((obj_aabb[0][2] - voxelGridOrigin[2]) / voxelSize) - 3, 0)
+#         max_z_in_voxel = min(int((obj_aabb[1][2] - voxelGridOrigin[2]) / voxelSize) + 3, voxelGridDim[2])
+
+#         # Crop the tsdf
+#         obj_tsdf = tsdf_segment[min_x_in_voxel:max_x_in_voxel, min_y_in_voxel:max_y_in_voxel, min_z_in_voxel:max_z_in_voxel]
+#         # Reconstruct with marching cube
+#         obj_verts, obj_faces, obj_normals, obj_values = measure.marching_cubes_lewiner(obj_tsdf, spacing=[voxelSize]*3, level=0)
+
+#         obj_mesh_points = np.zeros_like(obj_verts)
+#         obj_mesh_points[:,0] = voxelGridOrigin[0] + obj_verts[:,0]
+#         obj_mesh_points[:,1] = voxelGridOrigin[1] + obj_verts[:,1]
+#         obj_mesh_points[:,2] = voxelGridOrigin[2] + obj_verts[:,2]
+
+#         obj_num_verts = obj_verts.shape[0]
+#         obj_num_faces = obj_faces.shape[0]
+
+#         obj_verts_tuple = np.zeros((obj_num_verts,), dtype=[('x', 'f4'), ('y', 'f4'),
+#                                                     ('z', 'f4')])
+#         obj_faces_tuple = np.zeros((obj_num_faces,), dtype=[('vertex_indices', 'i4', (3,))])
+
+#         for i in xrange(0, obj_num_verts):
+#             obj_verts_tuple[i] = tuple(obj_mesh_points[i, :])
+
+#         for i in xrange(0, obj_num_faces):
+#             obj_faces_tuple[i] = obj_faces[i, :].tolist()
+
+#         # save it out
+#         obj_el_verts = PlyElement.describe(obj_verts_tuple, 'vertex')
+#         obj_el_faces = PlyElement.describe(obj_faces_tuple, 'face')
+
+#         obj_ply_data = PlyData([obj_el_verts, obj_el_faces])
+#         obj_mesh_filename = obj_ply_output_prefix + '_%d.ply' % (obj_id)
+#         obj_ply = obj_ply_data.write(obj_mesh_filename)
 
 
 def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix, output_type='obj', tsdf_mesh_file=None):
@@ -109,7 +162,7 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
         convert_tsdf_to_ply(tsdf_bin_file, tsdf_mesh_file)
 
     # Segment the mesh points
-    objects_aabb = segment_aabb(mesh_points, ply_output_prefix)
+    objects_aabb = segment_aabb_noplaneseg(mesh_points, ply_output_prefix)
     
     for obj_id, obj_aabb in enumerate(objects_aabb):
         min_x_in_voxel = max(int((obj_aabb[0][0] - voxelGridOrigin[0]) / voxelSize) - 3, 0)
@@ -171,11 +224,11 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
 if __name__ == "__main__":
     tsdf_fusion_dir = "/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion"
     model_output_dir = '/home/hongtao/src/cup_imagine/model'
-    object_name = '1209_paperplate'
+    object_name = '1209_boxesnao'
     image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "rgbd-frames")
     camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "camera-intrinsics.txt")
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=0.0, voxel_grid_origin_y=0.06, voxel_grid_origin_z=0.0, fast_tsdf_settings=True)
+        voxel_grid_origin_x=0.0, voxel_grid_origin_y=0.1, voxel_grid_origin_z=-1.0, fast_tsdf_settings=True)
 
     tsdf_bin_file = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
     tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')

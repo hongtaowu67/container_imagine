@@ -20,6 +20,9 @@ import numpy as np
 import pcl
 from skimage import measure
 from plyfile import PlyData, PlyElement
+import trimesh
+import csv
+import os
 
 
 def quat2rotm(quat):
@@ -97,7 +100,6 @@ def segment_aabb(points, ply_output_prefix):
 
     # Filtered point
     cloud_filtered = pcl.PointCloud()
-    # cloud_filtered = cloud
     cloud_filtered.from_array(np.delete(points, plane_indices, axis=0))
 
     i = 0
@@ -145,6 +147,78 @@ def segment_aabb(points, ply_output_prefix):
         print 'object aabb: {}'.format(obj_aabb)
 
     return total_aabb
+
+
+def segment_aabb_noplaneseg(points, ply_output_prefix):
+    """
+    Return the AABB of the segmented object
+    Trim off the plane and segment the object with Euclidean cluster
+    Save the point cloud of the segmented objects
+
+    Args:
+    - points (nx3 float array): points from the tsdf
+    - ply_output_prefix: prefix name for the output ply file, e.g., 'test_1124_aruco_3_mesh'
+
+    Returns:
+    - total_aabb: list of aabb of each object
+    """
+
+    # Load points into a point cloud class
+    points = points.astype(np.float32)
+    cloud = pcl.PointCloud()
+    cloud.from_array(points)
+    print('Point cloud data: ' + str(cloud.size) + ' points')
+
+    # Filtered point
+    cloud_filtered = pcl.PointCloud()
+    cloud_filtered = cloud
+
+    i = 0
+    nr_points = cloud_filtered.size
+    
+    # Euclidean Cluster
+    tree = cloud_filtered.make_kdtree()
+    ec = cloud_filtered.make_EuclideanClusterExtraction()
+    ec.set_ClusterTolerance(0.015)
+    ec.set_MinClusterSize(200)
+    ec.set_MaxClusterSize(25000)
+    ec.set_SearchMethod(tree)
+    cluster_indices = ec.Extract()
+
+    print('cluster_indices : ' + str(cluster_indices.count) + " count.")
+
+    total_aabb = []
+
+    # Compute AABB for each object
+    # Save the point for each cluster
+    for j, indices in enumerate(cluster_indices):
+        # Save ply file
+        num_verts = len(indices)
+        obj_points = np.zeros((num_verts, 3))
+        verts_tuple = np.zeros((num_verts, ), dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
+        for i, indice in enumerate(indices):
+            verts_tuple[i] = cloud_filtered[indice]
+            obj_points[i, :] = cloud_filtered[indice]
+
+        el_verts = PlyElement.describe(verts_tuple, 'vertex')
+
+        ply_new_data = PlyData([el_verts])
+        ply_output_file = ply_output_prefix + '_%d.ply' % (j)
+        ply_write = ply_new_data.write(ply_output_file)
+
+        # AABB
+        max_x = np.max(obj_points[:, 0])
+        min_x = np.min(obj_points[:, 0])
+        max_y = np.max(obj_points[:, 1])
+        min_y = np.min(obj_points[:, 1])
+        max_z = np.max(obj_points[:, 2])
+        min_z = np.min(obj_points[:, 2])
+        obj_aabb = [(min_x, min_y, min_z), (max_x, max_y, max_z)]
+        total_aabb.append(obj_aabb)
+        print 'object aabb: {}'.format(obj_aabb)
+
+    return total_aabb
+
 
 
 def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
@@ -240,4 +314,39 @@ def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
     print "Converting to ply format and writing to file took %d s" % (time.time() - start_time)
 
     # return mesh_points, tsdf, voxelGridOrigin, voxelSize
+
+
+def ply2csv(ply_file, csv_file):
+    """
+    Convert ply file to csv. Each point is the vertices of an object.
+
+    Args:
+    - ply_file: path to the ply file
+    - csv_file: path to save csv file
+    """
+
+    ply = PlyData.read(ply_file)
+
+    vertices_num = len(ply['vertex']['x'])
+
+    print "Number of all vertices: {}".format(vertices_num)
+
+    with open(csv_file, 'w') as c_file:
+        writer = csv.writer(c_file, quoting=csv.QUOTE_NONE)
+        for i in range(vertices_num):
+            writer.writerow([ply.elements[0].data['x'][i], ply.elements[0].data['y'][i], ply.elements[0].data['z'][i]])
+    
+    print("Finished!")
+
+
+# if __name__ == "__main__":
+#     ply_folder = '/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion/model'
+#     obj_name = '1209_boxesnao_point_debug_5'
+#     ply_filename = os.path.join(ply_folder, obj_name + '.ply')
+#     obj_filename = os.path.join(ply_folder, obj_name + '.csv')
+
+#     ply2csv(ply_filename, obj_filename)
+
+
+
 
