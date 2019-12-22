@@ -1,9 +1,10 @@
 #! /usr/bin/env python
 
-from aruco import ArUco
+from calibrate.aruco import ArUco
 import numpy as np
 import rospy
 import time
+from robot import Robot
 
 def quat2rotm(quat):
     """
@@ -48,12 +49,14 @@ def make_rigid_transformation(pos, orn):
     return homo_mat
 
 
-
 class Calibrate:
-    def __init__(self):
+
+    def __init__(self, tcp_host_ip='172.22.22.2', tcp_port=30002, rtc_host_ip='172.22.22.2', rtc_port=30003,
+                save_dir=None, workspace_limits=None, calib_point_num=30):
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
         print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
         
+        self.robot = Robot(workspace_limits, tcp_host_ip, tcp_port, rtc_host_ip, rtc_port, calibrate=True)
         self.aruco = ArUco()
         rospy.init_node('aruco', anonymous=True)
         time.sleep(0.5)
@@ -89,6 +92,3 @@ class Calibrate:
 
 if __name__ == "__main__":
     C = Calibrate()
-
-    while True:
-        C.get_marker_2_cam()
