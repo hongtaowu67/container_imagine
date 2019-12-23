@@ -43,14 +43,12 @@ class Calibrate:
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
         print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
         
+        self.tcp_host_ip = tcp_host_ip
         self.workspace_limits = workspace_limits
         self.save_dir = save_dir
 
-        self.robot = Robot(self.workspace_limits, tcp_host_ip)
-        
-        self.aruco = ArUco()
-        rospy.init_node('aruco', anonymous=True)
-        time.sleep(0.5)
+        self.robot = None
+        self.aruco = None
 
         self.markerIncam_pos = None
         self.markerIncam_orn = None
@@ -87,6 +85,8 @@ class Calibrate:
         self.robot_poses = []
         self.marker_poses = []
 
+        self.cam2ee = None
+
 
     def get_marker_2_cam(self):
         time.sleep(0.5)
@@ -107,7 +107,7 @@ class Calibrate:
     
     def save_transforms_to_file(self, calib_pt_idx, tool_transformation, marker_transformation, aruco_img):
         
-        robot_pose_file = os.path.join(self.save_dir, str(calib_pt_idx)  + '_self.robot_poses.txt')
+        robot_pose_file = os.path.join(self.save_dir, str(calib_pt_idx)  + '_robotpose.txt')
         marker_pose_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_markerpose.txt')
         aruco_img_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_img.png')
         
@@ -127,6 +127,13 @@ class Calibrate:
     def collect_data(self):
         """Collect data for calibration
         """
+        # Initialize the robot
+        self.robot = Robot(self.workspace_limits, self.tcp_host_ip)
+        
+        # Initialize the aruco
+        self.aruco = ArUco()
+        rospy.init_node('aruco', anonymous=True)
+        time.sleep(0.5)
         
         epsilon = 0.05 # randomness for sampling orientation
         complete_point_num = 0
@@ -168,8 +175,7 @@ class Calibrate:
         Two lists of 4x4 transformation matrices.
         self.robot_poses, self.marker_poses
         """
-        self.robot_poses = []
-        self.marker_poses = []
+
         for f in os.listdir(load_dir):
             if 'robotpose.txt' in f:
                 robot_pose_file = f
@@ -201,7 +207,7 @@ class Calibrate:
         - self.marker_poses (list of 4x4 numpy array): poses (homogenous transformation) of the marker in the camera frame.
 
         Return:
-        - cam2ee (4x4 numpy array): poses of the camera in the robot end-effector frame.
+        - self.cam2ee (4x4 numpy array): poses of the camera in the robot end-effector frame.
         """
 
         assert len(self.robot_poses) == len(self.marker_poses), 'robot poses and marker poses are not of the same length!'
@@ -225,6 +231,14 @@ class Calibrate:
             beta[:, i] = get_mat_log(B[:3, :3, i])
             M += np.outer(beta[:, i], alpha[:, i])
 
+            # Bad pair of transformation are very close in the orientation.
+            # They will give nan result
+            if np.sum(np.isnan(alpha[:, i])) + np.sum(np.isnan(beta[:, i])) > 0:
+                nan_num += 1
+                continue
+            else:
+                M += np.outer(beta[:, i], alpha[:, i])
+
         # Get the rotation matrix
         mtm = np.matmul(M.T, M)
         u_mtm, s_mtm, vh_mtm = np.linalg.svd(mtm)
@@ -236,20 +250,44 @@ class Calibrate:
         for i in range(n-1):
             I_Ra_Left[(3*i):(3*(i+1)), :] = np.eye(3) - A[:3, :3, i]
             ta_Rtb_Right[(3*i):(3*(i+1)), :] = np.reshape(A[:3, 3, i] - np.dot(R, B[:3, 3, i]), (3, 1))
-        t = np.linalg.lstsq(I_Ra_Left, ta_Rtb_Right, rcond=None)[0]
         
-        cam2ee = np.c_[R, t]
-        cam2ee = np.r_[cam2ee, [[0, 0, 0, 1]]]
 
-        print "Calibration Result:\n", cam2ee
+        t = np.linalg.lstsq(I_Ra_Left, ta_Rtb_Right, rcond=-1)[0]
         
-        return cam2ee
+        self.cam2ee = np.c_[R, t]
+        self.cam2ee = np.r_[self.cam2ee, [[0, 0, 0, 1]]]
+
+        print "Calibration Result:\n", self.cam2ee
+    
+
+    def test(self):
+        """ Test the accuracy of the calculated result.
+            Use AXB to calculate the base2tag transformation for each frame.
+        """
+        n = len(self.robot_poses)
+        for i in range(n):
+            base2tag = np.matmul(np.matmul(self.robot_poses[i], self.cam2ee), self.marker_poses[i])
+            print("base2tag #{}".format(i))
+            print(base2tag)
+
+    
+    def calibrate(self):
+
+        self.load_transforms(self.save_dir)
+        self.axxb()
+        self.test()
+
+        # Save the calibration file
+        calibration_file = os.path.join(self.save_dir, 'camera_pose.txt')
+        with open(calibration_file, 'w') as file1:
+            for l in np.reshape(self.cam2ee, (16, )).tolist():
+                file1.writelines(str(l) + ' ')
 
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1223_2"
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
-    # C.collect_data()
-    C.load_transforms(save_dir)
-    cam2ee = C.axxb()
+    C.collect_data()
+    C.calibrate()
+
