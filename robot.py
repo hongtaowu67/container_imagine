@@ -16,7 +16,6 @@ import itertools
 import urx
 
 
-
 class Robot(object):
 
     def __init__(self, workspace_limits=None, tcp_host_ip=None, calibrate=False):
@@ -25,7 +24,7 @@ class Robot(object):
 
         workspace_limits (3x2 float array): [[x_min, x_max], [y_min, y_max], [z_min, z_max]]
         tcp_host_ip (string): tcp to connect to the robot
-        calibrate (bool): to calibration or no
+        calibrate (bool): to calibration or not
         '''
 
         print("Initializing the robot...")
@@ -38,8 +37,12 @@ class Robot(object):
         self.vel = 1
 
         # Default home joint configuration
-        self.home_config = (0.0, -0.6, 0.3, 0, 3.14, 0)
+        self.home_config = (-0.06755, -0.44946, 0.48105, 
+                2.0849771838777822, 1.154796711201963, -0.27191177786048848)
         
+        # Sleep time between different frame
+        self.sleep_time = 0.5
+
         self.go_home()
 
         #TODO: Initialize the camera
@@ -54,16 +57,21 @@ class Robot(object):
         """
         if tool_orientation is None:
             config = tuple(tool_position + [0, np.pi, 0])
-            self.robot.movel(config, self.acc, self.vel)
+            transform = self.robot.movel(config, self.acc, self.vel)
         else:
             config = tuple(tool_position + tool_orientation)
-            self.robot.movel(config, self.acc, self.vel)
+            transform = self.robot.movel(config, self.acc, self.vel)
+        
+        time.sleep(self.sleep_time)
 
+        return transform
     
+
     def go_home(self):
         self.robot.movel(self.home_config, self.acc, self.vel)
 
+
 # Test
 if __name__ == "__main__":
-    workspace_limits = [[0.2, 0.2], [-0.5, -0.8], [0.3, 0.5]]
+    workspace_limits = [[0.2, 0.2], [-0.5, -0.8], [0.4, 0.5]]
     robot = Robot(workspace_limits=workspace_limits, tcp_host_ip='172.22.22.2')

@@ -7,7 +7,7 @@ Nov 15, 2019
 import rospy
 import roslib
 from geometry_msgs.msg import PoseStamped
-
+from threading import Lock
 import numpy as np
 
 class ArUco:
@@ -24,10 +24,14 @@ class ArUco:
         
         self.pos = None
         self.orn = None
+        self.seq = None
+        self.pub_seq = None
 
-        # Flags for message publishing
-        self.get_new_msg = False
-        self.msg_registered = False
+        # # Flags for message publishing
+        # self.get_new_msg = False
+        # self.msg_registered = False
+
+        self.mutex = Lock()
         
         self._pose_sub = rospy.Subscriber(self.pose_topic, PoseStamped, self._poseInfoCb)
 
@@ -35,31 +39,39 @@ class ArUco:
         if msg is None:
             rospy.logwarn("_poseInfoCb: msg is None!")
 
-        self.get_new_msg = True
-        self.msg_registered = False
+        # self.get_new_msg = True
+        # self.msg_registered = False
         
-        self.pose_x = msg.pose.position.x
-        self.pose_y = msg.pose.position.y
-        self.pose_z = msg.pose.position.z
-        self.pose_qx = msg.pose.orientation.x
-        self.pose_qy = msg.pose.orientation.y
-        self.pose_qz = msg.pose.orientation.z
-        self.pose_qw = msg.pose.orientation.w
-        self.pos = np.array([self.pose_x, self.pose_y, self.pose_z])
-        self.orn = np.array([self.pose_qw, self.pose_qx, self.pose_qy, self.pose_qz])
+        with self.mutex:        
+            self.seq = msg.header.seq
+            self.pose_x = msg.pose.position.x
+            self.pose_y = msg.pose.position.y
+            self.pose_z = msg.pose.position.z
+            self.pose_qx = msg.pose.orientation.x
+            self.pose_qy = msg.pose.orientation.y
+            self.pose_qz = msg.pose.orientation.z
+            self.pose_qw = msg.pose.orientation.w
+            self.pos = np.array([self.pose_x, self.pose_y, self.pose_z])
+            self.orn = np.array([self.pose_qw, self.pose_qx, self.pose_qy, self.pose_qz])
 
     def get_pose(self):
         pos = None
         orn = None
 
-        # If new message received, then publish. If no message received, publish none.
-        if (self.get_new_msg) and (not self.msg_registered):
-            if self.pos is not None:
+        # # If new message received, then publish. If no message received, publish none.
+        # if (self.get_new_msg) and (not self.msg_registered):
+        #     if self.pos is not None:
+        #         pos = self.pos.copy()
+        #     if self.orn is not None:
+        #         orn = self.orn.copy()
+        #     self.get_new_msg = False
+        #     self.msg_registered = True
+
+        with self.mutex:
+            if (self.pos is not None) and (self.seq != self.pub_seq):
+                self.pub_seq = self.seq
                 pos = self.pos.copy()
-            if self.orn is not None:
                 orn = self.orn.copy()
-            self.get_new_msg = False
-            self.msg_registered = True
 
         return pos, orn
 
