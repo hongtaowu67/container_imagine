@@ -37,8 +37,8 @@ class Robot(object):
         self.vel = 1
 
         # Default home joint configuration
-        self.home_config = (-0.06755, -0.44946, 0.48105, 
-                2.0849771838777822, 1.154796711201963, -0.27191177786048848)
+        self.home_config = (0.03263, -0.31182, 0.49574, 
+                0.85278977222806773, -2.2014136950986072, 1.2277969610053945)
         
         # Sleep time between different frame
         self.sleep_time = 0.5

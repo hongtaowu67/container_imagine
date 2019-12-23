@@ -1,11 +1,16 @@
 #! /usr/bin/env python
 
-from calibrate.aruco import ArUco
+
 import numpy as np
 import rospy
 import time
+import cv2
+import os
+
 from robot import Robot
-from utils import make_rigid_transformation, quat2rotm
+from utils import make_rigid_transformation, quat2rotm, pose_inv, get_mat_log
+from calibrate.aruco import ArUco
+
 
 def quat2rotm(quat):
     """
@@ -34,11 +39,12 @@ def quat2rotm(quat):
 
 class Calibrate:
 
-    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=30):
+    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=20):
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
         print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
         
         self.workspace_limits = workspace_limits
+        self.save_dir = save_dir
 
         self.robot = Robot(self.workspace_limits, tcp_host_ip)
         
@@ -48,46 +54,74 @@ class Calibrate:
 
         self.markerIncam_pos = None
         self.markerIncam_orn = None
-
-        # Place the tag at a position where the camera can see the tag at home position
-        self.markerIncam_pos, _ = self.aruco.get_pose()
+        self.markerIncam_mat = None
 
         self.calib_point_num = calib_point_num
 
+        # 20 points for calibration
         # Values are obtained from moving the robot in teaching mode
         # and read the value with rob.get_pose() in urx
-        self.calibration_orn = [[[2.0849771838777822, 1.154796711201963, -0.27191177786048848], 
-                                [1.7050381847811928, 1.6784915484788332, -0.57787071188056516], 
-                                [1.6505922172425964, 1.7685039622413643, -0.31499784157645533],
-                                [1.8266154616606618, 2.0394733857552945, -0.34732284534340724]], 
-                               [[2.1363630736354229, 1.2316614839213429, 0.18869285661438978], 
-                                [2.1686120566833802, 1.5133539396258169, 0.21500147577327908], 
-                                [1.9346763255710158, 1.246221227551646, 0.34526209695370191]],
-                                [2.0556688938020238, 1.4044727967099233, 0.35105867311343597]]
+        self.calib_point = [
+            (0.14282, -0.22315, 0.45514, 2.0706478248473146, -1.6414903508903624, 1.0368435382270969),
+            (0.15854, -0.19267, 0.44396, 2.1184750445195655, -1.4886177235256481, 1.2713974559693531),
+            (0.15331, -0.27321, 0.51774, 2.1471476902138402, -1.4558981541250335, 1.5309999422602492),
+            (0.16379, -0.48074, 0.42930, 2.092649080650665, -1.5631709563698295, 1.1499213791083467),
+            (0.04358, -0.46918, 0.45697, 1.8740474732641852, -1.8586896531614672, 1.0172960164477349),
+            (-0.11321, -0.38199, 0.40457, 1.4574672485928888, -2.1159781690176627, 1.5411657513520138),
+            (-0.12579, -0.37428, 0.41091, 1.4136429710370186, -2.0096733912249447, 1.9069074252588027),
+            (0.07445, -0.61316, 0.42427, 2.1086180532042986, -1.9226215431986324, 1.0820013909428459),
+            (0.18917, -0.68770, 0.28746, -2.1136081438009957, 2.0671057104365635, -0.30887843592209752),
+            (-0.04003, -0.68773, 0.48108, -1.5515697648058082, 2.0950150892204715, -1.0340024541888257),
+            (-0.15762, -0.59901, 0.57168, -1.3416588150098743, 2.2645190536134625, -1.2050594657568403),
+            (-0.11677, -0.46207, 0.69365, -1.3161710600247019, 2.3198893891650147, -1.3287794274423772),
+            (-0.19618, -0.59905, 0.57311, -1.0628327244910714, 1.9536961514161599, -1.4937776788557307),
+            (-0.02950, -0.44617, 0.71450, 1.654160327606111, -2.3211293206781995, 1.165612840260227),
+            (0.10531, -0.33048, 0.75721 , 1.9509682164031634, -2.0615572029888862, 1.1078748584393434),
+            (0.21782, -0.21388, 0.76401, 2.3485870176455736, -1.615752047097202, 1.0160215961598813),
+            (0.03921, -0.29656, 0.79423, 1.2180241325292287, -2.0715233693557717, 0.88950199612736058),
+            (-0.20431, -0.55478, 0.59035, 0.68424240279077064, -2.8901015824157592, 0.90132747050124484),
+            (0.43481, -0.51220, 0.40272, 1.4528613310113572, -1.7610822120576275, 0.43000358571424696),
+            (0.08307, -0.24159, 0.50617, 1.0228050528025394, -2.0190463059023176, 1.46064680982313)
+        ]
+
+        self.robot_poses = []
+        self.marker_poses = []
 
 
     def get_marker_2_cam(self):
         time.sleep(0.5)
 
-        markerIncam_pos, markerIncam_quat = self.aruco.get_pose()
+        markerIncam_pos, markerIncam_quat, aruco_img = self.aruco.get_pose()
 
         # If the difference between the previous marker pos and the current is large
         # Consider it got a new detection of tag
-        if (np.linalg.norm(markerIncam_pos - self.markerIncam_pos) > 0.0001):
+        if markerIncam_pos is not None:
             self.markerIncam_pos = markerIncam_pos
             self.markerIncam_orn = quat2rotm(markerIncam_quat)
             self.markerIncam_mat = make_rigid_transformation(self.markerIncam_pos, self.markerIncam_orn)
         else:
             self.markerIncam_mat = None
-        
-        # if self.markerIncam_mat is not None:
-        #     print('Marker in Cam')
-        #     print(self.markerIncam_mat)
-        #     print('Cam in Marker')
-        #     print(np.linalg.inv(self.markerIncam_mat))
-        #     print("#####")
 
-        return self.markerIncam_mat
+        return self.markerIncam_mat, aruco_img
+
+    
+    def save_transforms_to_file(self, calib_pt_idx, tool_transformation, marker_transformation, aruco_img):
+        
+        robot_pose_file = os.path.join(self.save_dir, str(calib_pt_idx)  + '_self.robot_poses.txt')
+        marker_pose_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_markerpose.txt')
+        aruco_img_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_img.png')
+        
+        # Tool pose in robot base frame
+        with open(robot_pose_file, 'w') as file1:
+            for l in np.reshape(tool_transformation, (16, )).tolist():
+                file1.writelines(str(l) + ' ')
+
+        # Marker pose in camera frame
+        with open(marker_pose_file, 'w') as file2:
+            for l in np.reshape(marker_transformation, (16, )).tolist():
+                file2.writelines(str(l) + ' ')
+        
+        cv2.imwrite(aruco_img_file, aruco_img)
 
 
     def collect_data(self):
@@ -98,29 +132,16 @@ class Calibrate:
         complete_point_num = 0
         
         while complete_point_num < self.calib_point_num:
-            # Sample a position winthin the workspace
-            pos = [self.workspace_limits[0][0] + np.random.rand() * (self.workspace_limits[0][1] - self.workspace_limits[0][0]),
-                   self.workspace_limits[1][0] + np.random.rand() * (self.workspace_limits[1][1] - self.workspace_limits[1][0]),
-                   self.workspace_limits[2][0] + np.random.rand() * (self.workspace_limits[2][1] - self.workspace_limits[2][0])]
-            
-            # Sample a random orientation
-            if pos[0] >= 0:
-                np.random.shuffle(self.calibration_orn[0])
-                orn = self.calibration_orn[0][0]
-            else:
-                np.random.shuffle(self.calibration_orn[1])
-                orn = self.calibration_orn[1][0]
 
-            orn[0] += np.random.rand() * epsilon * (0.5 - np.random.rand())
-            orn[1] += np.random.rand() * epsilon * (0.5 - np.random.rand())
-            orn[2] += np.random.rand() * epsilon * (0.5 - np.random.rand())
+            pos = self.calib_point[complete_point_num][:3]
+            orn = self.calib_point[complete_point_num][3:]
             
             # Move the robot
             robot_transform = self.robot.move_to(pos, orn)
             time.sleep(1)
 
             # Marker Pose
-            marker_pose = self.get_marker_2_cam()
+            marker_pose, aruco_img = self.get_marker_2_cam()
 
             if marker_pose is not None:
                 # Robot Pose
@@ -134,12 +155,101 @@ class Calibrate:
                 print("Marker Pose")
                 print(marker_pose)
                 print("#################")
-                time.sleep(1)
+                self.save_transforms_to_file(complete_point_num, robot_pose, marker_pose, aruco_img)
 
                 complete_point_num += 1
+
+    
+    def load_transforms(self, load_dir):
+        """ Load robot pose and marker pose from a save directory
+        # Arguments
+        load_dir: the directory where calibration data was previously acquired from the robot.
+        # Returns
+        Two lists of 4x4 transformation matrices.
+        self.robot_poses, self.marker_poses
+        """
+        self.robot_poses = []
+        self.marker_poses = []
+        for f in os.listdir(load_dir):
+            if 'robotpose.txt' in f:
+                robot_pose_file = f
+                marker_pose_file = f[:-13] + 'markerpose.txt'
+
+                # tool pose in robot base frame
+                with open(os.path.join(load_dir, robot_pose_file), 'r') as file_robot:
+                    robotpose_str = file_robot.readline().split(' ')
+                    robotpose = [float (x) for x in robotpose_str if x is not '']
+                    assert len(robotpose) == 16
+                    robotpose = np.reshape(np.array(robotpose), (4, 4))
+                self.robot_poses.append(robotpose)
+
+                # marker pose in camera frame
+                with open(os.path.join(load_dir, marker_pose_file), 'r') as file_marker:
+                    markerpose_str = file_marker.readline().split(' ')
+                    markerpose = [float(x) for x in markerpose_str if x is not '']
+                    assert len(markerpose) == 16
+                    markerpose = np.reshape(np.array(markerpose), (4, 4))
+                self.marker_poses.append(markerpose)
+    
+
+    def axxb(self):
+        """
+        AX=XB solver.
+        
+        Args:
+        - self.robot_poses (list of 4x4 numpy array): poses (homogenous transformation) of the robot end-effector in the robot base frame.
+        - self.marker_poses (list of 4x4 numpy array): poses (homogenous transformation) of the marker in the camera frame.
+
+        Return:
+        - cam2ee (4x4 numpy array): poses of the camera in the robot end-effector frame.
+        """
+
+        assert len(self.robot_poses) == len(self.marker_poses), 'robot poses and marker poses are not of the same length!'
+
+        n = len(self.robot_poses)
+        pose_inds= np.arange(n)
+        np.random.shuffle(pose_inds)
+
+        print "Total Pose: %i" % n
+        A = np.zeros((4, 4, n-1))
+        B = np.zeros((4, 4, n-1))
+        alpha = np.zeros((3, n-1))
+        beta = np.zeros((3, n-1))
+
+        M = np.zeros((3, 3))
+
+        for i in range(n-1):
+            A[:, :, i] = np.matmul(pose_inv(self.robot_poses[pose_inds[i+1]]), self.robot_poses[pose_inds[i]])
+            B[:, :, i] = np.matmul(self.marker_poses[pose_inds[i+1]], pose_inv(self.marker_poses[pose_inds[i]]))
+            alpha[:, i] = get_mat_log(A[:3, :3, i])
+            beta[:, i] = get_mat_log(B[:3, :3, i])
+            M += np.outer(beta[:, i], alpha[:, i])
+
+        # Get the rotation matrix
+        mtm = np.matmul(M.T, M)
+        u_mtm, s_mtm, vh_mtm = np.linalg.svd(mtm)
+        R = np.matmul(np.matmul(np.matmul(u_mtm, np.diag(np.power(s_mtm, -0.5))), vh_mtm), M.T)
+
+        # Get the tranlation vector
+        I_Ra_Left = np.zeros((3*(n-1), 3))
+        ta_Rtb_Right = np.zeros((3 * (n-1), 1))
+        for i in range(n-1):
+            I_Ra_Left[(3*i):(3*(i+1)), :] = np.eye(3) - A[:3, :3, i]
+            ta_Rtb_Right[(3*i):(3*(i+1)), :] = np.reshape(A[:3, 3, i] - np.dot(R, B[:3, 3, i]), (3, 1))
+        t = np.linalg.lstsq(I_Ra_Left, ta_Rtb_Right, rcond=None)[0]
+        
+        cam2ee = np.c_[R, t]
+        cam2ee = np.r_[cam2ee, [[0, 0, 0, 1]]]
+
+        print "Calibration Result:\n", cam2ee
+        
+        return cam2ee
 
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    C = Calibrate(workspace_limits=workspace_limits)
-    C.collect_data()
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib"
+    C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
+    # C.collect_data()
+    C.load_transforms(save_dir)
+    cam2ee = C.axxb()
