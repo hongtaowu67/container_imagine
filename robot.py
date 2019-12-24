@@ -15,10 +15,12 @@ import numpy as np
 import itertools
 import urx
 
+from utils import make_rigid_transformation
+
 
 class Robot(object):
 
-    def __init__(self, workspace_limits=None, tcp_host_ip=None, calibrate=False):
+    def __init__(self, workspace_limits=None, tcp_host_ip='172.22.22.2', calibrate=False, acc=1, vel=1):
         '''
         UR5 Robot
 
@@ -33,12 +35,11 @@ class Robot(object):
         self.robot = urx.Robot(tcp_host_ip)
 
         # Acceleration and veloctiy
-        self.acc = 1
-        self.vel = 1
+        self.acc = acc
+        self.vel = vel
 
         # Default home joint configuration
-        self.home_config = (0.03263, -0.31182, 0.49574, 
-                0.85278977222806773, -2.2014136950986072, 1.2277969610053945)
+        self.home_config = (0.8367955088615417, -1.8993938604937952, 1.2887015342712402, -1.6408045927630823, -1.0915311018573206, -1.3117168585406702)
         
         # Sleep time between different frame
         self.sleep_time = 0.5
@@ -68,7 +69,28 @@ class Robot(object):
     
 
     def go_home(self):
-        self.robot.movel(self.home_config, self.acc, self.vel)
+        self.robot.movej(self.home_config, self.acc, self.vel)
+
+
+    def get_pose(self):
+        """Return a 4x4 numpy array rigid body transformation
+        """
+
+        xform = self.robot.get_pose()
+        pos = xform.pos.array
+        rotm = xform.orient.array
+
+        return make_rigid_transformation(pos, rotm)
+
+
+    def move_to_joint(self, joint_config):
+        """Move in joint configuration
+
+        Args:
+        - joint_config (6, tuple): 6 joints for UR5 robot
+        """
+        self.robot.movej(joint_config, self.acc, self.vel)
+
 
 
 # Test

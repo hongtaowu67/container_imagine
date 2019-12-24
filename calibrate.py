@@ -286,7 +286,7 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1223_2"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1223_5"
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
     C.collect_data()
     C.calibrate()
