@@ -165,6 +165,8 @@ class Calibrate:
                 self.save_transforms_to_file(complete_point_num, robot_pose, marker_pose, aruco_img)
 
                 complete_point_num += 1
+            
+            time.sleep(0.5)
 
     
     def load_transforms(self, load_dir):
@@ -286,7 +288,9 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1223_5"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1226_1"
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
     C.collect_data()
     C.calibrate()
