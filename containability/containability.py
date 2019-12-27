@@ -92,7 +92,7 @@ class Containability(object):
             self.obj_curr_aabb = p.getAABB(self.obj_id)
 
         # Reset debug camera postion
-        p.resetDebugVisualizerCamera(0.7, 75, -50, [0, 0, 1])
+        p.resetDebugVisualizerCamera(1.0, 0, -30, [0, 0, 1])
 
         # Create constraint on the cup to fix its position
         constarin_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
@@ -277,14 +277,14 @@ class Containability(object):
 if __name__ == "__main__":
 
     # Object information
-    model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1209_bluecup'
-    object_name = object_subdir + '_mesh_debug_0'
+    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+    object_subdir = "19-12-26-01"
+    object_name = "19-12-26" + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     mp4_dir = os.path.join(model_root_dir, object_subdir)
     print('URDF: ', obj_urdf)
 
-    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], 
+    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
             check_process=True, record_process=True, mp4_dir=mp4_dir)
 
     containable_affordance = C.get_containability()

@@ -22,21 +22,31 @@ from threading import Lock
 from utils import make_rigid_transformation
 
 class ROSCameraTSDFFusion:
-    def __init__(self):
-        print('Starting the ROSCamer...')
+    def __init__(self, automatic=False):
+        """
+        Args:
+        - automatic: if True, then use robot transformation to get camera pose;
+                     if False, then use ArUco tag to get camera pose
+        """
+
+        print('Starting the ROSCamera...')
         print('Make sure to roslaunch openni2_launch openni2.launch!')
         print('Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>')
+
+        self.automatic = automatic
+
         self.rgb_topic = '/camera/rgb/image_rect_color'
         self.depth_topic = '/camera/depth_registered/hw_registered/image_rect'
-        self.aruco_pose_topic = '/aruco_single/pose'
 
         self.rgb_img = None
         self.depth_img = None
-        self.camera_pose = None
-
         self._rgb_sub = rospy.Subscriber(self.rgb_topic, Image, self._rgbCb)
-        self._depth_sub = rospy.Subscriber(self.depth_topic, Image, self._depthCb)
-        self._pose_sub = rospy.Subscriber(self.aruco_pose_topic, PoseStamped, self._poseCb)
+        self._depth_sub = rospy.Subscriber(self.depth_topic, Image, self._depthCb) 
+
+        if not self.automatic:
+            self.aruco_pose_topic = '/aruco_single/pose'
+            self.camera_pose = None
+            self._pose_sub = rospy.Subscriber(self.aruco_pose_topic, PoseStamped, self._poseCb)       
         
         self._bridge = CvBridge()
 
@@ -92,6 +102,7 @@ class ROSCameraTSDFFusion:
         rgb_img = None
         depth_img = None
         camera_pose = None
+
         with self.mutex:
             if self.rgb_img is not None:
                 rgb_img = self.rgb_img
@@ -105,12 +116,12 @@ class ROSCameraTSDFFusion:
                 print('depth_img is None! Returning None!')
                 return None, None, None
 
-            if self.camera_pose is not None:
-                camera_pose = self.camera_pose
-            else:
-                print('camera_pose is None! Returning None!')
-                return None, None, None
+            # If automatic, then camera_pose = None
+            if not self.automatic:
+                if self.camera_pose is not None:
+                    camera_pose = self.camera_pose
+                else:
+                    print('camera_pose is None! Returning None!')
+                    return None, None, None
             
             return rgb_img, depth_img, camera_pose
-
-           

@@ -91,15 +91,19 @@ def write_urdf(urdf_path, obj_original_file, obj_vhacd_file, mass=0.0, origin_x=
 
 if __name__ == '__main__':
     start_time = time.time()
+    
     root_dir = '/home/hongtao/src/cup_imagine'
-    object_subdir = '1209_smalltape'
-    object_name = object_subdir + '_mesh_debug_0'
+    
+    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+    object_subdir = "19-12-26-05"
+    object_name = "19-12-26" + "_mesh_debug_0"
+
     vhacd_dir = os.path.join(root_dir, 'processing')
-    input_file = os.path.join(root_dir, 'model', object_subdir, object_name + '.obj') 
-    output_file = os.path.join(root_dir, 'model', object_subdir, object_name + '_vhacd.obj')
+    input_file = os.path.join(model_root_dir, object_subdir, object_name + '.obj') 
+    output_file = os.path.join(model_root_dir, object_subdir, object_name + '_vhacd.obj')
     run_vhacd(vhacd_dir, input_file, output_file)
 
-    urdf_path = os.path.join(root_dir, 'model', object_subdir, object_name + '.urdf')
+    urdf_path = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     obj_original_file = object_name + '.obj'
     obj_vhacd_file = object_name + '_vhacd.obj'
     write_urdf(urdf_path, obj_original_file, obj_vhacd_file)

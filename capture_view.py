@@ -1,0 +1,131 @@
+"""
+Automatically capture frames to reconstruct the object.
+"""
+
+import os
+import time
+
+import numpy as np
+import cv2
+import rospy
+
+from robot import Robot
+from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
+
+
+
+class AutoCaptureTSDFFusion:
+    def __init__ (self, data_folder, acc, vel, cam2ee_file, automatic=True, time_interval=None):
+        self.automatic = automatic
+        if not self.automatic:
+            self.time_interval = time_interval # time interval between each capture
+
+        self.data_folder = data_folder # data folder for saving the data
+        self.cam = ROSCameraTSDFFusion(automatic=self.automatic)
+        rospy.init_node('ros_camera_tsdf_fusion', anonymous=False)
+
+        self.acc = acc
+        self.vel = vel
+
+        self.robot = Robot(acc=self.acc, vel=self.vel)
+
+        # camera in ee frame
+        with open(os.path.join(cam2ee_file), 'r') as file_robot:
+            cam2ee_str = file_robot.readline().split(' ')
+            cam2ee = [float (x) for x in cam2ee_str if x is not '']
+            assert len(cam2ee) == 16
+            self.cam2ee = np.reshape(np.array(cam2ee), (4, 4))
+
+        # # Robot joint for each view (24 views)
+        self.rob_joints_view = [
+            # Front to back
+            (1.3270788192749023, -0.5871318022357386, 0.5635156631469727, -0.9754813353167933, -1.7128685156451624, -0.9983609358416956),
+            (1.326743245124817, -0.7666080633746546, 0.5507659912109375, -1.1000788847552698, -1.6169183889972132, -0.8689840475665491),
+            (1.3360190391540527, -0.9469612280475062, 0.5468959808349609, -0.9377940336810511, -1.6170862356769007, -0.947662655507223),
+            (1.3359711170196533, -1.1091974417315882, 0.543241024017334, -1.1184561888324183, -1.6170504728900355, -0.9476144949542444),
+            (1.3097859621047974, -1.325947109852926, 0.5417914390563965, -1.2099135557757776, -1.6170862356769007, -0.9475906530963343),
+            (1.3063464164733887, -1.531799618397848, 0.5402097702026367, -1.2114842573748987, -1.6275361219989222, -0.9428218046771448),
+            (1.3062745332717896, -1.8865845839129847, 0.5398621559143066, -1.3007505575763147, -1.6275718847857874, -0.9428337256060999),
+            (1.306550145149231, -2.303037468587057, 0.5397424697875977, -1.3006184736834925, -1.7889497915851038, -0.941359821950094),
+            (1.3082759380340576, -2.663814369832174, 0.5396947860717773, -1.2180894056903284, -1.7824023405658167, -0.9413002173053187),
+            (1.3044769763946533, -2.9997742811786097, 0.5389156341552734, -1.218149487172262, -1.5771907011615198, -0.7237361113177698),            
+            
+            # Right
+            (0.1635962873697281, -3.0001819769488733, 0.5388917922973633, -1.2183292547809046, -1.2167356649981897, -0.7237480322467249),
+            (-0.11921912828554326, -3.0355380217181605, 0.3965644836425781, -0.9881036917315882, -1.2167237440692347, -0.7238200346576136),
+            (-0.21987420717348272, -2.6819637457477015, 0.40045928955078125, -0.9391124884234827, -1.2167118231402796, -0.7238319555865687),
+            (-0.1557830015765589, -2.3539393583880823, 0.3219118118286133, -0.8757150808917444, -1.3472612539874476, -0.8076909224139612),
+
+            # Left
+            (3.273634672164917, -3.1482985655414026, 0.3076972961425781, -0.8725264708148401, -2.063065830861227, -0.9009659926043909),
+            (2.869597911834717, -2.959958855305807, 0.3995485305786133, -0.8721903006183069, -1.982847038899557, -0.900977913533346),
+            (3.44594407081604, -2.7235000769244593, 0.32242679595947266, -0.8720467726336878, -2.076796833668844, -0.9009659926043909),
+            (3.6073365211486816, -2.4106081167804163, 0.3210010528564453, -0.8791068235980433, -2.5716334025012415, -0.8077147642718714),
+
+            # Front to back
+            (1.3270788192749023, -0.5871318022357386, 0.5635156631469727, -0.9754813353167933, -1.7128685156451624, -0.9983609358416956),
+            (1.3360190391540527, -0.9469612280475062, 0.5468959808349609, -0.9377940336810511, -1.6170862356769007, -0.947662655507223),
+            (1.3097859621047974, -1.325947109852926, 0.5417914390563965, -1.2099135557757776, -1.6170862356769007, -0.9475906530963343),
+            (1.3062745332717896, -1.8865845839129847, 0.5398621559143066, -1.3007505575763147, -1.6275718847857874, -0.9428337256060999),
+            (1.3082759380340576, -2.663814369832174, 0.5396947860717773, -1.2180894056903284, -1.7824023405658167, -0.9413002173053187),
+            (1.3044769763946533, -2.9997742811786097, 0.5389156341552734, -1.218149487172262, -1.5771907011615198, -0.7237361113177698)            
+
+        ]
+    
+    
+    def save_frame(self, idx):
+        print('Start Capturing the frame...')
+        
+        rgb_file_name = 'frame-{:06d}.color.png'.format(idx+150)
+        depth_file_name = 'frame-{:06d}.depth.png'.format(idx+150)
+        pose_file_name = 'frame-{:06d}.pose.txt'.format(idx+150)
+
+        if not self.automatic:
+            rgb_img, depth_img, camera_pose = self.cam.get_frame()
+        else:
+            rgb_img, depth_img, _ = self.cam.get_frame()
+            robot_pose = self.robot.get_pose()
+            camera_pose = np.matmul(robot_pose, self.cam2ee)
+
+        save_success = False
+
+        if rgb_img is not None:
+            # Save rgb image
+            cv2.imwrite(os.path.join(self.data_folder, rgb_file_name), rgb_img)
+            # Save depth image
+            cv2.imwrite(os.path.join(self.data_folder, depth_file_name), depth_img)
+
+            # Save pose txt file
+            f = open(os.path.join(self.data_folder, pose_file_name), 'w')
+            for line in camera_pose:
+                writeLine = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + '\n'
+                f.write(writeLine)
+            
+            f.close()
+
+            print('Finish number {} frame!'.format(idx))
+            save_success = True
+
+        else:
+            print('Nothing is saved! There is missing data from rgb_img, depth_img, or camera_pose!')
+            print('Please check!')
+
+    
+    def collect_data(self):
+        for idx, rob_joint in enumerate(self.rob_joints_view):
+            self.robot.move_to_joint(rob_joint)
+            self.save_frame(idx)
+
+
+# Test
+if __name__ == "__main__":
+    root_folder = os.getcwd()
+    data_name = "19-12-26"
+    data_folder = os.path.join(root_folder, "data", data_name)
+    if not os.path.exists(data_folder):
+        os.mkdir(data_folder)
+        os.mkdir(os.path.join(data_folder, 'rgbd'))
+    cam2ee_file = os.path.join(root_folder, "calibrate/camera_pose.txt")
+    ACT = AutoCaptureTSDFFusion(data_folder=os.path.join(data_folder, 'rgbd'), 
+                                acc=0.3, vel=0.3, cam2ee_file=cam2ee_file)
+    ACT.collect_data()

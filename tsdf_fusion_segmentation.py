@@ -18,7 +18,7 @@ import time
 from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
-from utils import segment_aabb, convert_tsdf_to_ply
+from reconstruction.utils import segment_aabb, convert_tsdf_to_ply
 
 
 def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, output_dir=None, voxel_grid_origin_x=0.0,
@@ -30,19 +30,20 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
     if output_dir is None:
         output_dir = os.path.dirname(image_folder)
         print "output_dir: ", output_dir
-
-    tsdf_executable = os.path.join(tsdf_fusion_dir, 'demo_aruco_30') # The base frame is at the ArUco tag, 30 frames
+    
+    # TODO: if GPU is available, use GPU version of tsdf fusion
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'tsdf-fusion-cpu-24') # The base frame is at the ArUco tag, 20 frames
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
 
     cmd = "cd %s && %s %s %s" %(tsdf_fusion_dir, tsdf_executable,  camera_intrinsics_file, image_folder)
 
-
+    # Assume the object is no bigger than 0.2m x 0.2m
     if fast_tsdf_settings:
         voxel_size = 0.004
-        voxel_grid_dim_x = 100
-        voxel_grid_dim_y = 100
-        voxel_grid_dim_z = 100
+        voxel_grid_dim_x = 80
+        voxel_grid_dim_y = 80
+        voxel_grid_dim_z = 60
         
     
     cmd += " " + str(voxel_size)
@@ -62,8 +63,14 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
     process.wait()
     elapsed = time.time() - start_time
 
-    tsdf_bin = os.path.join(image_folder, 'tsdf.bin')
-    tsdf_ply = os.path.join(image_folder, 'tsdf.ply')
+    # Move the bin and ply file to the image folder
+    tsdf_bin_source = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
+    tsdf_ply_source = os.path.join(tsdf_fusion_dir, 'model/tsdf.ply')
+    tsdf_bin_dest = os.path.join(image_folder, 'tsdf.bin')
+    tsdf_ply_dest = os.path.join(image_folder, 'tsdf.ply')
+
+    shutil.move(tsdf_bin_source, tsdf_bin_dest)
+    shutil.move(tsdf_ply_source, tsdf_ply_dest)
 
     print "tsdf-fusion took %d seconds" %(elapsed)
 
@@ -169,18 +176,29 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
 
 # Test
 if __name__ == "__main__":
+<<<<<<< HEAD:reconstruction/tsdf_fusion_segmentation.py
     tsdf_fusion_dir = "/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion"
     model_output_dir = '/home/hongtao/src/cup_imagine/model'
     object_name = '1209_smalltape'
     image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "rgbd-frames")
     camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "camera-intrinsics.txt")
-    run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=0.0, voxel_grid_origin_y=0.06, voxel_grid_origin_z=0.0, fast_tsdf_settings=True)
+=======
+    root_dir = os.getcwd()
+    tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
 
-    tsdf_bin_file = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
-    tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')
-    tsdf_ply_file = os.path.join(tsdf_fusion_dir, 'model/tsdf.ply')
-    ply_output_prefix = os.path.join(tsdf_fusion_dir, 'model', object_name + '_point_debug')
-    obj_mesh_output_prefix = os.path.join(model_output_dir, object_name, object_name + '_mesh_debug')
+    model_name = '19-12-26'
+    model_output_dir = os.path.join(root_dir, 'data', model_name)
+    image_folder = os.path.join(root_dir, 'data', model_name, 'rgbd')
+    camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
+    
+>>>>>>> 595ddfbe3c14d371f3552735540010c46523dfca:tsdf_fusion_segmentation.py
+    run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
+        voxel_grid_origin_x=-0.2, voxel_grid_origin_y=-0.5, voxel_grid_origin_z=0.0, fast_tsdf_settings=True)
+
+    tsdf_bin_file = os.path.join(root_dir, 'data', model_name, 'rgbd/tsdf.bin')
+    # tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')
+    tsdf_ply_file = os.path.join(root_dir, 'data', model_name, 'rgbd/tsdf.ply')
+    ply_output_prefix = os.path.join(root_dir, 'data', model_name, model_name + '_point_debug')
+    obj_mesh_output_prefix = os.path.join(root_dir, 'data', model_name, model_name + '_mesh_debug')
     # segment_tsdf(tsdf_bin_file, tsdf_mesh_file, ply_output_prefix, obj_mesh_output_prefix)
-    segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix, tsdf_mesh_file=tsdf_mesh_file)
+    segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)

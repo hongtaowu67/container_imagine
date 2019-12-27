@@ -25,16 +25,14 @@ def find_pose(*args):
 
 if __name__ == "__main__":
         # Object information
-    model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1127_twocupsglass'
-    object0_name = object_subdir + '_mesh_debug_0'
-    object1_name = object_subdir + '_mesh_debug_1'
-    obj0_urdf = os.path.join(model_root_dir, object_subdir, object0_name + '.urdf')
-    obj1_urdf = os.path.join(model_root_dir, object_subdir, object1_name + '.urdf')
+    # Object information
+    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+    object_subdir = "19-12-26-03"
+    object_name = "19-12-26" + "_mesh_debug_0"
+    obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
 
-    find_pose(obj0_urdf, obj1_urdf)
+    find_pose(obj_urdf)
     sphere_urdf = "/home/hongtao/Dropbox/spirit-dictionary/dataset/general_object/sphere_mini.urdf"
-    p.loadURDF(sphere_urdf, basePosition=[0.22915708, 0.12977, 0.10912167])
-    p.loadURDF(sphere_urdf, basePosition=[0.1891403, 0.132533, -0.05785289])
+    p.loadURDF(sphere_urdf, basePosition=[-0.06005477, -0.32549876, 0.182815])
 
     import ipdb; ipdb.set_trace()
