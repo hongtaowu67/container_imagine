@@ -19,7 +19,7 @@ sphere_urdf = "/home/hongtao/Dropbox/spirit-dictionary/dataset/general_object/sp
 
 class Containability(object):
     def __init__(self, obj_urdf, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
-                 check_process=False, record_process=False):
+                 check_process=False, record_process=False, mp4_dir=None):
         """
         Args:
         - obj_zero_orn: the start orientation of the object in Euler Angle
@@ -42,6 +42,10 @@ class Containability(object):
 
         # Simulation Parameter
         self.simulation_iteration = 1000
+        # if mp4_dir is None:
+        #     self.save_mp4_dir = "/home/hongtao/Dropbox/spirit-dictionary/mp4"
+        # else:
+        #     self.save_mp4_dir = mp4_dir
         self.save_mp4_dir = "/home/hongtao/Dropbox/spirit-dictionary/mp4"
         self.check_process = check_process
         self.record_process = record_process
@@ -88,7 +92,7 @@ class Containability(object):
             self.obj_curr_aabb = p.getAABB(self.obj_id)
 
         # Reset debug camera postion
-        p.resetDebugVisualizerCamera(0.5, 75, -50, [0, 0, 1])
+        p.resetDebugVisualizerCamera(0.7, 75, -50, [0, 0, 1])
 
         # Create constraint on the cup to fix its position
         constarin_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
@@ -274,12 +278,14 @@ if __name__ == "__main__":
 
     # Object information
     model_root_dir = "/home/hongtao/src/cup_imagine/model"
-    object_subdir = '1127_twocupsglass'
-    object_name = object_subdir + '_mesh_debug_1'
+    object_subdir = '1209_bluecup'
+    object_name = object_subdir + '_mesh_debug_0'
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
+    mp4_dir = os.path.join(model_root_dir, object_subdir)
     print('URDF: ', obj_urdf)
 
-    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], check_process=True, record_process=False)
+    C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[np.pi/2, 0, 0], 
+            check_process=True, record_process=True, mp4_dir=mp4_dir)
 
     containable_affordance = C.get_containability()
 
