@@ -56,6 +56,7 @@ class Containability(object):
         self.sphere_drop_pos = []
         self.sphere_in_drop_pos = []
         self.sphere_drop_z = 0
+        self.sphere_lateralfriction=0.05
 
         # Set the world
         physicsClient = p.connect(p.GUI)
@@ -95,7 +96,7 @@ class Containability(object):
         p.resetDebugVisualizerCamera(1.0, 0, -30, [0, 0, 1])
 
         # Create constraint on the cup to fix its position
-        constarin_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
+        self.constraint_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
                 parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos,
                 parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
                 childFrameOrientation=self.obj_zero_orn)
@@ -109,7 +110,10 @@ class Containability(object):
         # Set up sphere
         for i in range(self.sphere_num):
             sphere = p.loadURDF(sphere_urdf)
-            p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, lateralFriction=0.1)
+            p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
+                    lateralFriction=self.sphere_lateralfriction,
+                    spinningFriction=0.5,
+                    rollingFriction=0.5)
 
             self.sphere_id.append(sphere)
 
@@ -188,7 +192,6 @@ class Containability(object):
 
         ####### Get OBB of the object ########
         ####### Get CoM of the object ########
-        # import ipdb; ipdb.set_trace()
 
         ########################### Drop Sphere Into ############################
 
@@ -278,14 +281,14 @@ if __name__ == "__main__":
 
     # Object information
     model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-    object_subdir = "19-12-26-01"
-    object_name = "19-12-26" + "_mesh_debug_0"
+    object_subdir = "TapeKingThickTape"
+    object_name = object_subdir + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
     mp4_dir = os.path.join(model_root_dir, object_subdir)
     print('URDF: ', obj_urdf)
 
     C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-            check_process=True, record_process=True, mp4_dir=mp4_dir)
+            check_process=True, record_process=False, mp4_dir=mp4_dir)
 
     containable_affordance = C.get_containability()
 
