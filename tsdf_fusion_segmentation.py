@@ -43,7 +43,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         voxel_size = 0.004
         voxel_grid_dim_x = 80
         voxel_grid_dim_y = 80
-        voxel_grid_dim_z = 60
+        voxel_grid_dim_z = 80
         
     
     cmd += " " + str(voxel_size)
@@ -179,18 +179,20 @@ if __name__ == "__main__":
     root_dir = os.getcwd()
     tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
 
-    model_name = '19-12-26'
-    model_output_dir = os.path.join(root_dir, 'data', model_name)
-    image_folder = os.path.join(root_dir, 'data', model_name, 'rgbd')
+    model_name = "CVSPillBottle_24view"
+
+    data_root_folder = "/home/hongtao/Dropbox/ICRA2021/data"
+    model_output_dir = os.path.join(data_root_folder, model_name)
+    image_folder = os.path.join(data_root_folder, model_name, 'rgbd')
     camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
     
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=-0.2, voxel_grid_origin_y=-0.5, voxel_grid_origin_z=0.0, fast_tsdf_settings=True)
+        voxel_grid_origin_x=-0.2, voxel_grid_origin_y=-0.5, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
 
-    tsdf_bin_file = os.path.join(root_dir, 'data', model_name, 'rgbd/tsdf.bin')
+    tsdf_bin_file = os.path.join(data_root_folder, model_name, 'rgbd/tsdf.bin')
     # tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')
-    tsdf_ply_file = os.path.join(root_dir, 'data', model_name, 'rgbd/tsdf.ply')
-    ply_output_prefix = os.path.join(root_dir, 'data', model_name, model_name + '_point_debug')
-    obj_mesh_output_prefix = os.path.join(root_dir, 'data', model_name, model_name + '_mesh_debug')
+    tsdf_ply_file = os.path.join(data_root_folder, model_name, 'rgbd/tsdf.ply')
+    ply_output_prefix = os.path.join(data_root_folder, model_name, model_name + '_point_debug')
+    obj_mesh_output_prefix = os.path.join(data_root_folder, model_name, model_name + '_mesh_debug')
     # segment_tsdf(tsdf_bin_file, tsdf_mesh_file, ply_output_prefix, obj_mesh_output_prefix)
     segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)

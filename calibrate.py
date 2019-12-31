@@ -39,7 +39,7 @@ def quat2rotm(quat):
 
 class Calibrate:
 
-    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=20):
+    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=21):
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
         print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
         
@@ -64,6 +64,7 @@ class Calibrate:
             (0.15854, -0.19267, 0.44396, 2.1184750445195655, -1.4886177235256481, 1.2713974559693531),
             (0.15331, -0.27321, 0.51774, 2.1471476902138402, -1.4558981541250335, 1.5309999422602492),
             (0.16379, -0.48074, 0.42930, 2.092649080650665, -1.5631709563698295, 1.1499213791083467),
+            (0.16385600078638235, -0.48214980394986295, 0.4161398783297443, 2.171314734044116, -1.6708397052569866, 1.0722978920348876),
             (0.04358, -0.46918, 0.45697, 1.8740474732641852, -1.8586896531614672, 1.0172960164477349),
             (-0.11321, -0.38199, 0.40457, 1.4574672485928888, -2.1159781690176627, 1.5411657513520138),
             (-0.12579, -0.37428, 0.41091, 1.4136429710370186, -2.0096733912249447, 1.9069074252588027),
@@ -72,7 +73,7 @@ class Calibrate:
             (-0.04003, -0.68773, 0.48108, -1.5515697648058082, 2.0950150892204715, -1.0340024541888257),
             (-0.15762, -0.59901, 0.57168, -1.3416588150098743, 2.2645190536134625, -1.2050594657568403),
             (-0.11677, -0.46207, 0.69365, -1.3161710600247019, 2.3198893891650147, -1.3287794274423772),
-            (-0.19618, -0.59905, 0.57311, -1.0628327244910714, 1.9536961514161599, -1.4937776788557307),
+            (-0.20012560867488638, -0.5972039219533453, 0.5642451437333025, -1.1152467026827724, 2.0860764881441027, -1.3885137436438686),
             (-0.02950, -0.44617, 0.71450, 1.654160327606111, -2.3211293206781995, 1.165612840260227),
             (0.10531, -0.33048, 0.75721 , 1.9509682164031634, -2.0615572029888862, 1.1078748584393434),
             (0.21782, -0.21388, 0.76401, 2.3485870176455736, -1.615752047097202, 1.0160215961598813),
@@ -157,16 +158,17 @@ class Calibrate:
                 robot_pose = make_rigid_transformation(pos, rotm)
 
                 print("Get the marker in frame!")
-                print("Robot Pose")
-                print(robot_pose)
-                print("Marker Pose")
-                print(marker_pose)
+                print(self.calib_point[complete_point_num])
+                # print("Robot Pose")
+                # print(robot_pose)
+                # print("Marker Pose")
+                # print(marker_pose)
                 print("#################")
                 self.save_transforms_to_file(complete_point_num, robot_pose, marker_pose, aruco_img)
 
                 complete_point_num += 1
             
-            time.sleep(0.5)
+            time.sleep(1)
 
     
     def load_transforms(self, load_dir):
@@ -288,7 +290,7 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1226_1"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1230_4"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
