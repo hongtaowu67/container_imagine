@@ -219,6 +219,23 @@ class Containability(object):
             elif i >= int(9 * self.simulation_iteration / 10):
                 p.setGravity(-10, -10, -10)
 
+            # 1.0: Sinusoidal Horizontal Force Field
+            # if i > int(1 * self.simulation_iteration / 5) and i < int(2 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi/4) * horizontal_field_strength, math.cos(math.pi/4) * horizontal_field_strength, -10)
+
+            # elif i >= int(2 * self.simulation_iteration / 5) and i < int(3 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(2 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi/2) * horizontal_field_strength, math.cos(math.pi/2) * horizontal_field_strength, -10)
+
+            # elif i >= int(3 * self.simulation_iteration / 5) and i < int(4 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(3 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(3*math.pi/4) * horizontal_field_strength, math.cos(3*math.pi/4) * horizontal_field_strength, -10)
+
+            # elif i >= int(4 * self.simulation_iteration / 5) and i < int(5 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(4 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi) * horizontal_field_strength, math.cos(math.pi) * horizontal_field_strength, -10)
+
 
         ########## 2.0 Version of checking sphere ##########
         # Check the x, y, z coordinate of the sphere w.r.t to the x, y, z coordinate of the cup
@@ -271,7 +288,6 @@ class Containability(object):
 
 
     def disconnet(self):
-        # Disconnect the 
         p.disconnect()
 
         
