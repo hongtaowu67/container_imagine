@@ -6,6 +6,10 @@ No physics about the cup is reasoned. This scrip only test the containability
 This is written for cup imagination project.
 @author: Hongtao Wu 
 Nov 02, 2019
+
+Modify for using shaking the objects instead of applying horizontal force field.
+Modifier: Hongtao Wu
+Dec 29, 2019
 """
 
 import numpy as np
@@ -56,7 +60,7 @@ class Containability(object):
         self.sphere_drop_pos = []
         self.sphere_in_drop_pos = []
         self.sphere_drop_z = 0
-        self.sphere_lateralfriction=0.05
+        self.sphere_lateralfriction=0.0
 
         # Set the world
         physicsClient = p.connect(p.GUI)
@@ -95,11 +99,17 @@ class Containability(object):
         # Reset debug camera postion
         p.resetDebugVisualizerCamera(1.0, 0, -30, [0, 0, 1])
 
+        # # Create constraint on the cup to fix its position
+        # self.constraint_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
+        #         parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos,
+        #         parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
+        #         childFrameOrientation=self.obj_zero_orn)
+
         # Create constraint on the cup to fix its position
+        p.changeDynamics(self.obj_id, -1, mass=1)
         self.constraint_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos,
-                parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
-                childFrameOrientation=self.obj_zero_orn)
+                parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos)
+        
 
 
     def load_sphere(self):
@@ -194,6 +204,10 @@ class Containability(object):
         ####### Get CoM of the object ########
 
         ########################### Drop Sphere Into ############################
+        force = 1
+
+        # 2.0: Shake Objects
+        pivot = [0, 0, 1]
 
         for i in range(self.simulation_iteration):
             p.stepSimulation()
@@ -205,21 +219,50 @@ class Containability(object):
                 # Check the number of sphere in the bbox before moving the sphere away
                 sphere_in_num = self.checkincup(self.obj_curr_aabb)
 
-            if i > int(1 * self.simulation_iteration / 5) and i < int(1 * self.simulation_iteration / 2):
-                horizontal_field_strength = 5 + 5 * math.sin(math.pi / 2 * (i - int(self.simulation_iteration / 5)) / int(3 * self.simulation_iteration / 10))
-                p.setGravity(horizontal_field_strength, horizontal_field_strength, -10)
 
-            elif i >= int(1 * self.simulation_iteration / 2) and i < int(3 * self.simulation_iteration / 5):
-                p.setGravity(10, 10, -10)
+            # 0.0: Original Horizontal Force Field
+            # if i > int(1 * self.simulation_iteration / 5) and i < int(1 * self.simulation_iteration / 2):
+            #     horizontal_field_strength = 5 + 5 * math.sin(math.pi / 2 * (i - int(self.simulation_iteration / 5)) / int(3 * self.simulation_iteration / 10))
+            #     p.setGravity(horizontal_field_strength, horizontal_field_strength, -10)
 
-            elif i >= int(3 * self.simulation_iteration / 5) and i < int(9 * self.simulation_iteration / 10):
-                horizontal_field_strength = -5 - 5 * math.sin(math.pi / 2 * (i - int(3 * self.simulation_iteration / 5)) / int(3 * self.simulation_iteration / 10))
-                p.setGravity(horizontal_field_strength, horizontal_field_strength, -10)
+            # elif i >= int(1 * self.simulation_iteration / 2) and i < int(3 * self.simulation_iteration / 5):
+            #     p.setGravity(10, 10, -10)
 
-            elif i >= int(9 * self.simulation_iteration / 10):
-                p.setGravity(-10, -10, -10)
+            # elif i >= int(3 * self.simulation_iteration / 5) and i < int(9 * self.simulation_iteration / 10):
+            #     horizontal_field_strength = -5 - 5 * math.sin(math.pi / 2 * (i - int(3 * self.simulation_iteration / 5)) / int(3 * self.simulation_iteration / 10))
+            #     p.setGravity(horizontal_field_strength, horizontal_field_strength, -10)
+
+            # elif i >= int(9 * self.simulation_iteration / 10):
+            #     p.setGravity(-10, -10, -10)
 
 
+            # 1.0: Sinusoidal Horizontal Force Field
+            # if i > int(1 * self.simulation_iteration / 5) and i < int(2 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi/4) * horizontal_field_strength, math.cos(math.pi/4) * horizontal_field_strength, -10)
+
+            # elif i >= int(2 * self.simulation_iteration / 5) and i < int(3 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(2 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi/2) * horizontal_field_strength, math.cos(math.pi/2) * horizontal_field_strength, -10)
+
+            # elif i >= int(3 * self.simulation_iteration / 5) and i < int(4 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(3 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(3*math.pi/4) * horizontal_field_strength, math.cos(3*math.pi/4) * horizontal_field_strength, -10)
+
+            # elif i >= int(4 * self.simulation_iteration / 5) and i < int(5 * self.simulation_iteration / 5):
+            #     horizontal_field_strength = force * math.cos(math.pi * 2 * (i - int(4 * self.simulation_iteration / 5)) / int(1 * self.simulation_iteration / 5))
+            #     p.setGravity(math.sin(math.pi) * horizontal_field_strength, math.cos(math.pi) * horizontal_field_strength, -10)
+            
+
+            # 2.0: Shake Objects
+            if i > int(1 * self.simulation_iteration / 5) and i <= int( 3 * self.simulation_iteration / 5):
+                orn = p.getQuaternionFromEuler([math.pi/40 * math.sin(math.pi * 2 * (i - int(self.simulation_iteration / 5)) / int(2 * self.simulation_iteration / 5)), 0, 0])
+                p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+            elif i > int(3 * self.simulation_iteration / 5) and i < int(5 * self.simulation_iteration / 5):
+                orn = p.getQuaternionFromEuler([0, math.pi/40 * math.sin(math.pi * 2 * (i - int(3 * self.simulation_iteration / 5)) / int(2 * self.simulation_iteration / 5)), 0])
+                p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+
+          
         ########## 2.0 Version of checking sphere ##########
         # Check the x, y, z coordinate of the sphere w.r.t to the x, y, z coordinate of the cup
         sphere_in_box_num = self.checkincup(self.obj_curr_aabb)
@@ -281,9 +324,10 @@ if __name__ == "__main__":
 
     # Object information
     model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-    object_subdir = "TapeKingThickTape"
+    object_subdir = "UpsideDownPaperCup"
     object_name = object_subdir + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
+
     mp4_dir = os.path.join(model_root_dir, object_subdir)
     print('URDF: ', obj_urdf)
 
