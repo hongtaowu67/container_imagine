@@ -179,7 +179,7 @@ if __name__ == "__main__":
     root_dir = os.getcwd()
     tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
 
-    model_name = "CVSPillBottle_24view"
+    model_name = "Ofantligt_24view"
 
     data_root_folder = "/home/hongtao/Dropbox/ICRA2021/data"
     model_output_dir = os.path.join(data_root_folder, model_name)

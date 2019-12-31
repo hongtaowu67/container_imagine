@@ -175,7 +175,7 @@ class AutoCaptureTSDFFusion:
 if __name__ == "__main__":
     root_folder = os.getcwd()
     
-    data_name = "CVSPillBottle_24view"
+    data_name = "Ofantligt_24view"
 
     data_folder = os.path.join("/home/hongtao/Dropbox/ICRA2021/data", data_name)
     if not os.path.exists(data_folder):
