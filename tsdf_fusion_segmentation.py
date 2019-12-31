@@ -176,24 +176,16 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
 
 # Test
 if __name__ == "__main__":
-<<<<<<< HEAD:reconstruction/tsdf_fusion_segmentation.py
-    tsdf_fusion_dir = "/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion"
-    model_output_dir = '/home/hongtao/src/cup_imagine/model'
-    object_name = '1209_smalltape'
-    image_folder = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "rgbd-frames")
-    camera_intrinsics_file = os.path.join(tsdf_fusion_dir, "data/tsdf_data", object_name, "camera-intrinsics.txt")
-=======
     root_dir = os.getcwd()
     tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
 
-    model_name = "Ofantligt_24view"
+    model_name = "HarmonicBook_24view"
 
     data_root_folder = "/home/hongtao/Dropbox/ICRA2021/data"
     model_output_dir = os.path.join(data_root_folder, model_name)
     image_folder = os.path.join(data_root_folder, model_name, 'rgbd')
     camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
     
->>>>>>> 595ddfbe3c14d371f3552735540010c46523dfca:tsdf_fusion_segmentation.py
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         voxel_grid_origin_x=-0.2, voxel_grid_origin_y=-0.5, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
 
