@@ -33,7 +33,7 @@ class Containability(object):
         super(Containability, self).__init__()
         # Hyperparameter
         self.sphere_num = 225  # sphere number needs to be a 
-        self.sphere_in_percentage_threshold = 0.08
+        self.sphere_in_percentage_threshold = 0.10
         self.sphere_in_percentage = 0.0
 
         # Restitution
@@ -45,7 +45,7 @@ class Containability(object):
         self.containability = False
 
         # Simulation Parameter
-        self.simulation_iteration = 1000
+        self.simulation_iteration = 1500
         # if mp4_dir is None:
         #     self.save_mp4_dir = "/home/hongtao/Dropbox/spirit-dictionary/mp4"
         # else:
@@ -215,17 +215,27 @@ class Containability(object):
             if self.check_process:
                 time.sleep(1. / 240.)
 
-            if i == int(1 * self.simulation_iteration / 5):
+            if i == int(1 * self.simulation_iteration / 10):
                 # Check the number of sphere in the bbox before moving the sphere away
                 sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
             # 2.0: Shake Objects
-            if i > int(1 * self.simulation_iteration / 5) and i <= int( 3 * self.simulation_iteration / 5):
-                orn = p.getQuaternionFromEuler([math.pi/40 * math.sin(math.pi * 2 * (i - int(self.simulation_iteration / 5)) / int(2 * self.simulation_iteration / 5)), 0, 0])
+            if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
+                orn = p.getQuaternionFromEuler([math.pi/40 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
-            elif i > int(3 * self.simulation_iteration / 5) and i < int(5 * self.simulation_iteration / 5):
-                orn = p.getQuaternionFromEuler([0, math.pi/40 * math.sin(math.pi * 2 * (i - int(3 * self.simulation_iteration / 5)) / int(2 * self.simulation_iteration / 5)), 0])
+            elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
+                orn = p.getQuaternionFromEuler([0, math.pi/40 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+
+            # 3.0: Horizontal Acceleration
+            elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
+                p.setGravity(0.5, 0.0, -10)
+            elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
+                p.setGravity(-0.5, 0.0, -10)
+            elif i > int(9.5 * self.simulation_iteration / 10) and i <= int(9.75 * self.simulation_iteration / 10):
+                p.setGravity(0.0, 0.5, -10)
+            elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
+                p.setGravity(0.0, -0.5, -10)
 
           
         ########## 2.0 Version of checking sphere ##########
@@ -284,8 +294,8 @@ class Containability(object):
 if __name__ == "__main__":
 
     # Object information
-    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-    object_subdir = "HarmonicBook_24view"
+    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data/Test_Container"
+    object_subdir = "EkolnSoapDish_24view"
     object_name = object_subdir + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
 
