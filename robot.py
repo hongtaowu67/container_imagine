@@ -91,9 +91,15 @@ class Robot(object):
         """
         self.robot.movej(joint_config, self.acc, self.vel)
 
+    
+    def disconnect(self):
+        """Disconnect connection to the robot
+        """
+        self.robot.close()
 
 
-# Test
-if __name__ == "__main__":
-    workspace_limits = [[0.2, 0.2], [-0.5, -0.8], [0.4, 0.5]]
-    robot = Robot(workspace_limits=workspace_limits, tcp_host_ip='172.22.22.2')
+
+# # Test
+# if __name__ == "__main__":
+#     workspace_limits = [[0.2, 0.2], [-0.5, -0.8], [0.4, 0.5]]
+#     robot = Robot(workspace_limits=workspace_limits, tcp_host_ip='172.22.22.2')
