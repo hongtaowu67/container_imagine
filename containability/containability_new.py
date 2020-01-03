@@ -23,7 +23,7 @@ sphere_urdf = "/home/hongtao/Dropbox/spirit-dictionary/dataset/general_object/sp
 
 class Containability(object):
     def __init__(self, obj_urdf, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
-                 check_process=False, record_process=False, mp4_dir=None):
+                 check_process=False, record_process=False, mp4_dir=None, object_name=None):
         """
         Args:
         - obj_zero_orn: the start orientation of the object in Euler Angle
@@ -46,11 +46,6 @@ class Containability(object):
 
         # Simulation Parameter
         self.simulation_iteration = 1500
-        # if mp4_dir is None:
-        #     self.save_mp4_dir = "/home/hongtao/Dropbox/spirit-dictionary/mp4"
-        # else:
-        #     self.save_mp4_dir = mp4_dir
-        self.save_mp4_dir = "/home/hongtao/Dropbox/spirit-dictionary/mp4"
         self.check_process = check_process
         self.record_process = record_process
 
@@ -69,11 +64,17 @@ class Containability(object):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         # Save mp4 video
-        if self.record_process:
-            today = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-            mp4_file_name = today + "_retain_sphere_test.mp4"
+        if mp4_dir is not None:
+            self.save_mp4_dir = mp4_dir
+            self.object_name = object_name
+            mp4_file_name = self.object_name + ".mp4"
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
             p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
+
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+
+        # Reset debug camera postion
+        p.resetDebugVisualizerCamera(1.0, 0, -44, [-0.05, -0.1, 1])
 
         # Load plane
         self.plane_id = p.loadURDF("plane.urdf")
@@ -95,15 +96,6 @@ class Containability(object):
                     posObj=(0, 0, -self.obj_curr_aabb[0][2]+0.1),
                     ornObj=self.obj_zero_orn)
             self.obj_curr_aabb = p.getAABB(self.obj_id)
-
-        # Reset debug camera postion
-        p.resetDebugVisualizerCamera(1.0, 0, -30, [0, 0, 1])
-
-        # # Create constraint on the cup to fix its position
-        # self.constraint_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
-        #         parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos,
-        #         parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
-        #         childFrameOrientation=self.obj_zero_orn)
 
         # Create constraint on the cup to fix its position
         p.changeDynamics(self.obj_id, -1, mass=1)
@@ -241,7 +233,6 @@ class Containability(object):
         ########## 2.0 Version of checking sphere ##########
         # Check the x, y, z coordinate of the sphere w.r.t to the x, y, z coordinate of the cup
         sphere_in_box_num = self.checkincup(self.obj_curr_aabb)
-        print("Number of sphere in box: ", sphere_in_box_num)
 
         # Calculate how many percentage of the spheres are in the cup
         sphere_num_percentage = sphere_in_box_num / self.sphere_num
@@ -258,7 +249,7 @@ class Containability(object):
             print("/////////////////////////////////////")
             self.containability = False
         
-        return self.containability
+        return self.containability, sphere_num_percentage
     
 
     def find_drop_center(self):
@@ -294,8 +285,10 @@ class Containability(object):
 if __name__ == "__main__":
 
     # Object information
-    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data/Test_Container"
-    object_subdir = "EkolnSoapDish_24view"
+    model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+
+    object_subdir = "FladisBasket_24view"
+
     object_name = object_subdir + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
 
@@ -303,11 +296,31 @@ if __name__ == "__main__":
     print('URDF: ', obj_urdf)
 
     C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-            check_process=False, record_process=False, mp4_dir=mp4_dir)
+            check_process=True, mp4_dir=mp4_dir, object_name=object_name)
 
-    containable_affordance = C.get_containability()
+    containable_affordance, sphere_in_percentage = C.get_containability()
 
-    drop_spot = C.find_drop_center()
-    print("Dropping at: {}".format(drop_spot))
+    if containable_affordance:
+        drop_spot = C.find_drop_center()
+        print("Dropping at: {}".format(drop_spot))
+    else:
+        drop_spot = [np.nan, np.nan, np.nan]
+    
+    obj_containability_filename = object_subdir + '.txt'
+    obj_containability_file = os.path.join(model_root_dir, object_subdir, obj_containability_filename)
+    with open(obj_containability_file, 'w') as writefile:
+        write_line=[]
+        obj_info = "Name: " + object_subdir + '\n'
+        write_line.append(obj_info)
+        containability = "Containability: " + str(containable_affordance) + '\n'
+        write_line.append(containability)
+        sphere_percentage_line = "Sphere in percentage: " + str(sphere_in_percentage) + '\n'
+        write_line.append(sphere_percentage_line)
+        dropspot = "Drop Spot: " + str(list(drop_spot)) + '\n'
+        write_line.append(dropspot)
+        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+        time = "Time: " + today + '\n'
+        write_line.append(time)
+        writefile.writelines(write_line)
 
     C.disconnet()
