@@ -287,10 +287,12 @@ class Calibrate:
             for l in np.reshape(self.cam2ee, (16, )).tolist():
                 file1.writelines(str(l) + ' ')
 
+        self.robot.disconnect()
+
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1231_1"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_0101_1"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
