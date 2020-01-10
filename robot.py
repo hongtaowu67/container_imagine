@@ -92,10 +92,23 @@ class Robot(object):
         self.robot.movej(joint_config, self.acc, self.vel)
 
     
+    def close_gripper(self):
+        """Using I/O to close the gripper (afag EU-20 UR)
+        """
+        self.robot.send_program("set_tool_digital_out(%s, %s)" % (0, True))
+    
+    
+    def open_gripper(self):
+        """Using I/O to open the gripper (afag EU-20 UR)
+        """
+        self.robot.send_program("set_tool_digital_out(%s, %s)" % (0, False))
+
+    
     def disconnect(self):
         """Disconnect connection to the robot
         """
         self.robot.close()
+
 
 
 
