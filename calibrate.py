@@ -39,7 +39,7 @@ def quat2rotm(quat):
 
 class Calibrate:
 
-    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=21):
+    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=20):
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
         print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
         
@@ -79,7 +79,7 @@ class Calibrate:
             (0.21782, -0.21388, 0.76401, 2.3485870176455736, -1.615752047097202, 1.0160215961598813),
             (0.03921, -0.29656, 0.79423, 1.2180241325292287, -2.0715233693557717, 0.88950199612736058),
             (-0.20431, -0.55478, 0.59035, 0.68424240279077064, -2.8901015824157592, 0.90132747050124484),
-            (0.43481, -0.51220, 0.40272, 1.4528613310113572, -1.7610822120576275, 0.43000358571424696),
+            #(0.43481, -0.51220, 0.40272, 1.4528613310113572, -1.7610822120576275, 0.43000358571424696),
             (0.08307, -0.24159, 0.50617, 1.0228050528025394, -2.0190463059023176, 1.46064680982313)
         ]
 
@@ -292,7 +292,7 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_0101_1"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_0113_4"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
