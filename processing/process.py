@@ -95,8 +95,10 @@ if __name__ == '__main__':
     root_dir = '/home/hongtao/src/cup_imagine'
     
     model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-    object_subdir = "19-12-26-05"
-    object_name = "19-12-26" + "_mesh_debug_0"
+
+    object_subdir = "GripperTest_24view"
+
+    object_name = object_subdir + "_mesh_debug_0"
 
     vhacd_dir = os.path.join(root_dir, 'processing')
     input_file = os.path.join(model_root_dir, object_subdir, object_name + '.obj') 

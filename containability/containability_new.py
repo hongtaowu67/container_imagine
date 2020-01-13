@@ -287,7 +287,7 @@ if __name__ == "__main__":
     # Object information
     model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
 
-    object_subdir = "FladisBasket_24view"
+    object_subdir = "GripperTest1_24view"
 
     object_name = object_subdir + "_mesh_debug_0"
     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
