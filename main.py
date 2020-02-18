@@ -17,11 +17,11 @@ from capture_view_pick import AutoCapture
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
 from containability.containability_2 import Containability
-# from pick_and_pour import PickAndPour
+from pick_and_pour import PickAndPour
 
-data_name = "Bostitch_Stape"
+data_name = "White_Lap_Cup"
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-pouring = False
+pouring = True
 
 start_time = time.time()
 
@@ -56,14 +56,14 @@ run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file,
 # Segementation
 tsdf_bin_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.bin')
 tsdf_ply_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.ply')
-ply_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_point_debug')
-obj_mesh_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_mesh_debug')
+ply_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_point')
+obj_mesh_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_mesh')
 segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
 ##############################################################
 
 
 ##################### VHACD processing #######################
-object_name = data_name + "_mesh_debug_0"
+object_name = data_name + "_mesh_0"
 
 # VHACD
 vhacd_dir = os.path.join(root_dir, 'processing')
@@ -82,7 +82,7 @@ preprocessing_time = time.time() - start_time - autocapture_time
 
 
 ################# Containability Imagination #################
-object_name = data_name + "_mesh_debug_0"
+object_name = data_name + "_mesh_0"
 obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
 
 mp4_dir = os.path.join(data_root_dir, data_name)
@@ -103,12 +103,13 @@ imagination_time = time.time() - start_time - autocapture_time - preprocessing_t
 #################################################################
 
 if pouring:
-    raise NotImplementedError
+    if containability_affordance:
+        PP = PickAndPour(acc=1.0, vel=1.0)
+        PP.pick()
+        PP.pour(drop_spot)
+    pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - imagination_time
 else:
     pouring_time = np.nan
-# if containability_affordance:
-#     PP = PickAndPour(acc=1.0, vel=1.0)
-#     PP.pick()
 
 #################################################################
 result_txt_name = os.path.join(data_folder, data_name + ".txt")

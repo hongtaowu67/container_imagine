@@ -37,7 +37,7 @@ class PickAndPour:
 
         # Z axis for offset
         self.pre_pour_z_axis = self.pre_pour_orn_mat[:, 2]
-        self.gripper_offset = 0.1
+        self.gripper_offset = 0.08
         self.gripper_ee_offset = -self.gripper_offset * self.pre_pour_z_axis
 
     def pick(self):
@@ -60,7 +60,7 @@ class PickAndPour:
     def pour(self, pour_pos):
         pre_pour_pos_x = pour_pos[0] + self.gripper_ee_offset[0]
         pre_pour_pos_y = pour_pos[1] + self.gripper_ee_offset[1]
-        pre_pour_pos_z = pour_pos[2] + 0.22
+        pre_pour_pos_z = pour_pos[2] + 0.185
         pre_pour_pos = [pre_pour_pos_x, pre_pour_pos_y, pre_pour_pos_z]
         
         self.robot.go_home()
@@ -76,7 +76,21 @@ class PickAndPour:
         pour_config = current_config
         pour_config[-1] -= np.pi
 
-        self.robot.move_to_joint(pour_config, acc=3.0, vel=3.0)
+        self.robot.move_to_joint(pour_config, acc=6.0, vel=6.0)
+
+        # Shake the bottle
+        rotate_angle = np.pi/180 * 5
+        shake_config = pour_config
+        shake_config_last = shake_config[-1]
+        for i in range(10):
+            if i % 2 == 0:
+                shake_config[-1] = shake_config_last + rotate_angle
+                self.robot.move_to_joint(shake_config, acc=8.0, vel=8.0)
+            else:
+                shake_config[-1] = shake_config_last - rotate_angle
+                self.robot.move_to_joint(shake_config, acc=8.0, vel=8.0)
+            
+
 
         self.robot.disconnect()
 
@@ -84,11 +98,11 @@ class PickAndPour:
         self.robot.disconnect()
 
 
-if __name__ == "__main__":
-    PP = PickAndPour(0.2, 0.2)
-    PP.pick()
-    pour_pos = [-0.09675185282600629, -0.27783521655419324, 0.19688499319553388]
-    PP.pour(pour_pos)
+# if __name__ == "__main__":
+#     PP = PickAndPour(0.3, 0.3)
+#     PP.pick()
+#     pour_pos = [-0.09652546464564028, -0.2380368459759542, 0.20159800696372998]
+#     PP.pour(pour_pos)
 
 
 
