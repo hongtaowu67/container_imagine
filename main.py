@@ -19,9 +19,9 @@ from processing.process import run_vhacd, write_urdf
 from containability.containability_2 import Containability
 from pick_and_pour import PickAndPour
 
-data_name = "White_Lap_Cup"
+data_name = "Ikea_Klappa_Soft_Toy_Ball"
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-pouring = True
+pouring = False
 
 start_time = time.time()
 
