@@ -25,8 +25,6 @@ class PickAndPour:
             (2.007300853729248, -1.3760116736041468, 1.5031867027282715, -1.7167752424823206, -1.5620291868792933, -1.0819900671588343)
         ]
         
-        self.pre_pour_config = [0.15994670987129211, -2.743391815816061, 2.188680648803711, -2.6164353529559534, -0.919807259236471, -0.7580493132220667]
-
         # Unit: angle
         self.pre_pour_orn = [0.08087661589319343, -2.4383649694242595, 0.8312275202696641]
         self.pre_pour_orn_angle = np.linalg.norm(np.array(self.pre_pour_orn))
@@ -76,19 +74,19 @@ class PickAndPour:
         pour_config = current_config
         pour_config[-1] -= np.pi
 
-        self.robot.move_to_joint(pour_config, acc=6.0, vel=6.0)
+        self.robot.move_to_joint(pour_config, acc=12.0, vel=12.0)
 
         # Shake the bottle
-        rotate_angle = np.pi/180 * 5
+        rotate_angle = np.pi/180 * 8
         shake_config = pour_config
         shake_config_last = shake_config[-1]
         for i in range(10):
             if i % 2 == 0:
                 shake_config[-1] = shake_config_last + rotate_angle
-                self.robot.move_to_joint(shake_config, acc=8.0, vel=8.0)
+                self.robot.move_to_joint(shake_config, acc=12.0, vel=12.0)
             else:
                 shake_config[-1] = shake_config_last - rotate_angle
-                self.robot.move_to_joint(shake_config, acc=8.0, vel=8.0)
+                self.robot.move_to_joint(shake_config, acc=12.0, vel=12.0)
             
 
 

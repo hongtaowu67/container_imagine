@@ -20,7 +20,7 @@ from containability.containability_2 import Containability
 from pick_and_pour import PickAndPour
 
 
-data_name = "Blue_Cup"
+data_name = "mm_Yellow"
 pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
