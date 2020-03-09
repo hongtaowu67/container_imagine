@@ -20,7 +20,7 @@ from containability.containability_2 import Containability
 from pick_and_pour import PickAndPour
 
 
-data_name = "mm_Yellow"
+data_name = "Ikea_Bittergurka_Plant_Pot"
 pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"

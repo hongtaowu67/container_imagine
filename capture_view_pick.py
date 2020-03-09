@@ -31,6 +31,10 @@ class AutoCapture:
 
         self.robot = Robot(acc=self.acc, vel=self.vel, gripper_on=False)
 
+        # Feb 12, 2020
+        # For recording the data
+        time.sleep(5)
+
         # camera in ee frame
         with open(os.path.join(cam2ee_file), 'r') as file_robot:
             cam2ee_str = file_robot.readline().split(' ')
@@ -141,17 +145,17 @@ class AutoCapture:
         
 
 
-# Test
-if __name__ == "__main__":
-    root_folder = os.getcwd()
+# # Test
+# if __name__ == "__main__":
+#     root_folder = os.getcwd()
     
-    data_name = "GripperTest_24view"
+#     data_name = "GripperTest_24view"
 
-    data_folder = os.path.join("/home/hongtao/Dropbox/ICRA2021/data", data_name)
-    if not os.path.exists(data_folder):
-        os.mkdir(data_folder)
-        os.mkdir(os.path.join(data_folder, 'rgbd'))
-    cam2ee_file = os.path.join(root_folder, "calibrate/camera_pose.txt")
-    ACT = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
-                                acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
-    ACT.collect_data()
+#     data_folder = os.path.join("/home/hongtao/Dropbox/ICRA2021/data", data_name)
+#     if not os.path.exists(data_folder):
+#         os.mkdir(data_folder)
+#         os.mkdir(os.path.join(data_folder, 'rgbd'))
+#     cam2ee_file = os.path.join(root_folder, "calibrate/camera_pose.txt")
+#     ACT = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
+#                                 acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
+#     ACT.collect_data()

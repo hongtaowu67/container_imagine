@@ -146,7 +146,7 @@ class Calibrate:
             
             # Move the robot
             robot_transform = self.robot.move_to(pos, orn)
-            time.sleep(1)
+            time.sleep(2)
 
             # Marker Pose
             marker_pose, aruco_img = self.get_marker_2_cam()
@@ -292,7 +292,7 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_0211_1"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_0308_1"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
