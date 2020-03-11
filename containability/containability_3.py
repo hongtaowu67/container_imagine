@@ -23,12 +23,13 @@ import pybullet_data
 import time
 import os
 import math
+import trimesh
 
 
 sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
 
 class Containability(object):
-    def __init__(self, obj_urdf, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
+    def __init__(self, obj_urdf, obj_mesh, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
                  check_process=False, record_process=False, mp4_dir=None, object_name=None,
                  content_urdf=sphere_urdf):
         """
@@ -43,6 +44,11 @@ class Containability(object):
         self.sphere_in_percentage_threshold = 0.08
         self.sphere_urdf = content_urdf
         self.sphere_in_percentage = 0.0
+        self.sphere_x_range = np.nan
+        self.sphere_y_range = np.nan
+        self.drop_sphere_num = self.sphere_num
+        self.x_sphere_num = 0
+        self.y_sphere_num = 0
 
         # Restitution
         self.sphere_restitution = 0.0
@@ -67,7 +73,7 @@ class Containability(object):
 
         # Set the world
         if not check_process:
-            self.physicsClient = p.connect(p.GUI)
+            self.physicsClient = p.connect(p.DIRECT)
         else:
             self.physicsClient = p.connect(p.GUI)
         p.setGravity(0, 0, -10)
@@ -97,6 +103,10 @@ class Containability(object):
         self.obj_id = p.loadURDF(self.obj_urdf, basePosition=self.obj_zero_pos, baseOrientation=self.obj_zero_orn, 
                 useFixedBase=True)
         p.changeDynamics(self.obj_id, -1, restitution=self.object_restitution)
+        
+        # # OBB
+        # self.obj_mesh = trimesh.load(obj_mesh)
+        # self.obj_obb = self.obj_mesh.bounds
 
         # Get the bounding box of the cup
         self.obj_curr_aabb = p.getAABB(self.obj_id)
@@ -114,13 +124,50 @@ class Containability(object):
                 parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos) 
 
 
-    def load_sphere(self):
+    def load_sphere(self, obj_curr_aabb):
         """ Load sphere before simulation. 
             Make sure that pybullet has already been connected before calling this function.             
         """
 
+        sphere = p.loadURDF(self.sphere_urdf)
+        p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
+                lateralFriction=self.sphere_lateralfriction,
+                spinningFriction=0.5,
+                rollingFriction=0.5)
+
+        self.sphere_id.append(sphere)
+        sphere_aabb = p.getAABB(sphere)
+
+        self.sphere_x_range = sphere_aabb[1][0] - sphere_aabb[0][0]
+        self.sphere_y_range = sphere_aabb[1][1] - sphere_aabb[0][1] 
+
+        obj_aabb_xy_center = [(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(2)]
+        obj_aabb_xy_range = [abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(2)]
+        
+        # Dropping from 1cm above the object
+        self.sphere_drop_z = obj_curr_aabb[1][2] + 0.01
+
+        sphere_per_length = math.sqrt(self.sphere_num/(obj_aabb_xy_range[0] * obj_aabb_xy_range[1]))
+
+
+        self.x_sphere_num = int(sphere_per_length * obj_aabb_xy_range[0])
+        self.y_sphere_num = int(sphere_per_length * obj_aabb_xy_range[1])
+
+        self.sphere_dis_x = obj_aabb_xy_range[0] / self.x_sphere_num
+        self.sphere_dis_y = obj_aabb_xy_range[1] / self.y_sphere_num
+
+        if self.sphere_dis_x < (self.sphere_x_range):
+            self.sphere_dis_x = self.sphere_x_range
+            self.x_sphere_num = int(obj_aabb_xy_range[0] / self.sphere_dis_x)
+
+        if self.sphere_dis_y < (self.sphere_y_range):
+            self.sphere_dis_y = self.sphere_y_range
+            self.y_sphere_num = int(obj_aabb_xy_range[1] / self.sphere_dis_y)
+        
+        self.drop_sphere_num = self.x_sphere_num * self.y_sphere_num
+
         # Set up sphere
-        for i in range(self.sphere_num):
+        for i in range(self.drop_sphere_num):
             sphere = p.loadURDF(self.sphere_urdf)
             p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
                     lateralFriction=self.sphere_lateralfriction,
@@ -131,29 +178,24 @@ class Containability(object):
 
     
     def reset_sphere_drop(self, obj_curr_aabb):
-        """ Get the sphere drop position around the obj_curr_aabb. This function is called after the set_sphere"""
+        """ Get the sphere drop position around the obj_curr_obb. This function is called after the set_sphere"""
 
         obj_aabb_xy_center = [(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(2)]
         obj_aabb_xy_range = [abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(2)]
         
         # Dropping from 1cm above the object
         self.sphere_drop_z = obj_curr_aabb[1][2] + 0.01
-
-        sphere_per_length = math.sqrt(self.sphere_num/(obj_aabb_xy_range[0] * obj_aabb_xy_range[1]))
-
-        x_sphere_num = int(sphere_per_length * obj_aabb_xy_range[0])
-        y_sphere_num = int(sphere_per_length * obj_aabb_xy_range[1])
-
-        sphere_drop_x = np.linspace(-obj_aabb_xy_range[0]/2, obj_aabb_xy_range[0]/2, x_sphere_num) + obj_aabb_xy_center[0]
-        sphere_drop_y = np.linspace(-obj_aabb_xy_range[1]/2, obj_aabb_xy_range[1]/2, y_sphere_num) + obj_aabb_xy_center[1]
+        
+        sphere_drop_x = np.linspace(-obj_aabb_xy_range[0]/2, obj_aabb_xy_range[0]/2, self.x_sphere_num) + obj_aabb_xy_center[0]
+        sphere_drop_y = np.linspace(-obj_aabb_xy_range[1]/2, obj_aabb_xy_range[1]/2, self.y_sphere_num) + obj_aabb_xy_center[1]
 
         # Reset the sphere_drop_pos
         self.sphere_drop_pos = []
 
         # Reset sphere position
-        for i in range(self.sphere_num):
-            y_idx = int(i / x_sphere_num)
-            x_idx = i % x_sphere_num
+        for i in range(self.drop_sphere_num):
+            y_idx = int(i / self.x_sphere_num)
+            x_idx = i % self.x_sphere_num
 
             try:
                 sphere_start_pos = (sphere_drop_x[x_idx], sphere_drop_y[y_idx], self.sphere_drop_z)
@@ -181,7 +223,7 @@ class Containability(object):
         obj_aabb_center = np.array([(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(3)]) * 100
         obj_aabb_half_range = np.array([abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(3)]) * 100 / 2
 
-        for i in range(self.sphere_num):
+        for i in range(self.drop_sphere_num):
             sphere_pos, _ = p.getBasePositionAndOrientation(self.sphere_id[i])
             sphere_pos = np.array(sphere_pos) * 100
             
@@ -198,7 +240,7 @@ class Containability(object):
     def get_containability(self):
         """ Test the pouring of sphere and check how many sphere remains after pouring. """
         # Load sphere
-        self.load_sphere()
+        self.load_sphere(self.obj_curr_aabb)
         # Reset sphere position
         self.reset_sphere_drop(self.obj_curr_aabb)
 
@@ -223,10 +265,10 @@ class Containability(object):
 
             # 2.0: Shake Objects
             if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
-                orn = p.getQuaternionFromEuler([math.pi/40 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
+                orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
             elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
-                orn = p.getQuaternionFromEuler([0, math.pi/40 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
+                orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
 
             # 3.0: Horizontal Acceleration
@@ -244,7 +286,7 @@ class Containability(object):
         sphere_in_box_num = self.checkincup(self.obj_curr_aabb)
 
         # Calculate how many percentage of the spheres are in the cup
-        sphere_num_percentage = sphere_in_box_num / self.sphere_num
+        sphere_num_percentage = sphere_in_box_num / self.drop_sphere_num
 
         if sphere_num_percentage > self.sphere_in_percentage_threshold:
             print("#####################################")
@@ -287,47 +329,3 @@ class Containability(object):
     def disconnect_p(self):
         p.disconnect()
         
-
-# # Test
-# if __name__ == "__main__":
-
-#     # Object information
-#     model_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
-
-#     object_subdir = "GripperTest1_24view"
-
-#     object_name = object_subdir + "_mesh_debug_0"
-#     obj_urdf = os.path.join(model_root_dir, object_subdir, object_name + '.urdf')
-
-#     mp4_dir = os.path.join(model_root_dir, object_subdir)
-#     print('URDF: ', obj_urdf)
-
-#     C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-#             check_process=False, mp4_dir=None, object_name=object_name)
-
-#     containable_affordance, sphere_in_percentage = C.get_containability()
-
-#     if containable_affordance:
-#         drop_spot = C.find_drop_center()
-#         print("Dropping at: {}".format(drop_spot))
-#     else:
-#         drop_spot = [np.nan, np.nan, np.nan]
-    
-#     obj_containability_filename = object_subdir + '_py2.txt'
-#     obj_containability_file = os.path.join(model_root_dir, object_subdir, obj_containability_filename)
-#     with open(obj_containability_file, 'w') as writefile:
-#         write_line=[]
-#         obj_info = "Name: " + object_subdir + '\n'
-#         write_line.append(obj_info)
-#         containability = "Containability: " + str(containable_affordance) + '\n'
-#         write_line.append(containability)
-#         sphere_percentage_line = "Sphere in percentage: " + str(sphere_in_percentage) + '\n'
-#         write_line.append(sphere_percentage_line)
-#         dropspot = "Drop Spot: " + str(list(drop_spot)) + '\n'
-#         write_line.append(dropspot)
-#         today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-#         time = "Time: " + today + '\n'
-#         write_line.append(time)
-#         writefile.writelines(write_line)
-
-#     C.disconnet()
