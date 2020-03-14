@@ -16,12 +16,12 @@ import numpy as np
 from capture_view_pick import AutoCapture
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
-from containability.containability_2 import Containability
-from pick_and_pour import PickAndPour
+from containability.containability_3 import Containability
+from pick_and_pour_2 import PickAndPour
 
-
-data_name = "Ikea_Bittergurka_Plant_Pot"
-pouring = False
+content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
+data_name = "Dunkin_Paper_Cup_mm"
+pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
 
@@ -92,7 +92,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=True, mp4_dir=mp4_dir, object_name=object_name)
+        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 
@@ -107,7 +107,7 @@ imagination_time = time.time() - start_time - autocapture_time - preprocessing_t
 
 if pouring:
     if containability_affordance:
-        PP = PickAndPour(acc=1.0, vel=1.0)
+        PP = PickAndPour(acc=0.5, vel=0.5)
         PP.pick()
         PP.pour(drop_spot)
     pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - imagination_time
