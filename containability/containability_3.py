@@ -29,7 +29,7 @@ import trimesh
 sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
 
 class Containability(object):
-    def __init__(self, obj_urdf, obj_mesh, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
+    def __init__(self, obj_urdf, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
                  check_process=False, record_process=False, mp4_dir=None, object_name=None,
                  content_urdf=sphere_urdf):
         """
@@ -103,10 +103,6 @@ class Containability(object):
         self.obj_id = p.loadURDF(self.obj_urdf, basePosition=self.obj_zero_pos, baseOrientation=self.obj_zero_orn, 
                 useFixedBase=True)
         p.changeDynamics(self.obj_id, -1, restitution=self.object_restitution)
-        
-        # # OBB
-        # self.obj_mesh = trimesh.load(obj_mesh)
-        # self.obj_obb = self.obj_mesh.bounds
 
         # Get the bounding box of the cup
         self.obj_curr_aabb = p.getAABB(self.obj_id)

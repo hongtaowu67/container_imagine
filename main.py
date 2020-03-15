@@ -19,8 +19,8 @@ from processing.process import run_vhacd, write_urdf
 from containability.containability_3 import Containability
 from pick_and_pour_2 import PickAndPour
 
-content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
-data_name = "Dunkin_Paper_Cup_mm"
+content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
+data_name = "Ikea_Vardera_Mug_mm"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -107,7 +107,7 @@ imagination_time = time.time() - start_time - autocapture_time - preprocessing_t
 
 if pouring:
     if containability_affordance:
-        PP = PickAndPour(acc=0.5, vel=0.5)
+        PP = PickAndPour(acc=1.0, vel=1.0)
         PP.pick()
         PP.pour(drop_spot)
     pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - imagination_time

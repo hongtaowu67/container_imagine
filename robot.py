@@ -54,19 +54,25 @@ class Robot(object):
         #TODO: Initialize the camera
 
     
-    def move_to(self, tool_position, tool_orientation=None):
+    def move_to(self, tool_position, tool_orientation=None, acc=None, vel=None):
         """Move robot to position and orientation
 
         Args:
         - tool_position (list): x, y, z
         - tool_orientation (list): rx, ry, rz (in the axis-angle UR5 tradition)
         """
+        if acc is None:
+            acc = self.acc
+
+        if vel is None:
+            vel = self.vel
+
         if tool_orientation is None:
             config = tuple(tool_position + [0, np.pi, 0])
-            transform = self.robot.movel(config, self.acc, self.vel)
+            transform = self.robot.movel(config, acc, vel)
         else:
             config = tuple(tool_position + tool_orientation)
-            transform = self.robot.movel(config, self.acc, self.vel)
+            transform = self.robot.movel(config, acc, vel)
         
         time.sleep(self.sleep_time)
 

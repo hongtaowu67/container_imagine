@@ -46,7 +46,7 @@ class PickAndPour:
         self.pre_pour_y_axis = self.pre_pour_orn_mat[:, 1]
         self.pre_gripper_offset = -0.08
         self.pre_gripper_ee_offset = self.pre_gripper_offset * self.pre_pour_x_axis * np.sin(np.pi/4) - self.pre_gripper_offset * self.pre_pour_y_axis * np.cos(np.pi/4)
-        self.pre_gripper_ee_offset_z = 0.20
+        self.pre_gripper_ee_offset_z = 0.22
 
         # mid pour
         self.mid_pour_orn = [2.48899947, 0.0, -0.72901107]
@@ -68,7 +68,7 @@ class PickAndPour:
         self.end_pour_z_axis = self.end_pour_orn_mat[:, 2]
         self.end_gripper_offset = -0.14
         self.end_gripper_ee_offset = self.end_gripper_offset * self.end_pour_z_axis
-        self.end_gripper_ee_offset_z = 0.15
+        self.end_gripper_ee_offset_z = 0.16
 
         # # axis for rotation
         # self.rotate_axis = self.pre_pour_x_axis * np.sin(np.pi/4) + self.pre_pour_y_axis * np.cos(np.pi/4)
@@ -109,7 +109,7 @@ class PickAndPour:
         pre_pour_pos_z = pour_pos[2] + self.pre_gripper_ee_offset_z
         pre_pour_pos = [pre_pour_pos_x, pre_pour_pos_y, pre_pour_pos_z]
 
-        self.robot.move_to(pre_pour_pos, self.pre_pour_orn)
+        self.robot.move_to(pre_pour_pos, self.pre_pour_orn, acc=0.5, vel=0.5)
 
         # time.sleep(1)
 
@@ -125,7 +125,25 @@ class PickAndPour:
         end_pour_pos_z = pour_pos[2] + self.end_gripper_ee_offset_z
         end_pour_pos = [end_pour_pos_x, end_pour_pos_y, end_pour_pos_z]
 
-        self.robot.move_to(end_pour_pos, self.end_pour_orn)
+        self.robot.move_to(end_pour_pos, self.end_pour_orn, acc=0.1, vel=0.1)
+
+        current_config = self.robot.get_config()
+        pour_config = current_config
+
+        # Shake the bottle
+        rotate_angle = np.pi/180 * 3
+        shake_config = pour_config
+        shake_config_last = shake_config[-1]
+        for i in range(6):
+            if i % 2 == 0:
+                shake_config[-1] = shake_config_last + rotate_angle
+                self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+            else:
+                shake_config[-1] = shake_config_last - rotate_angle
+                self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+        
+        shake_config[-1] = shake_config_last
+        self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
 
         self.robot.disconnect()
 

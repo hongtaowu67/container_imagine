@@ -41,7 +41,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
     # Assume the object is no bigger than 0.2m x 0.2m
     if fast_tsdf_settings:
         voxel_size = 0.004
-        voxel_grid_dim_x = 150
+        voxel_grid_dim_x = 120
         voxel_grid_dim_y = 100
         voxel_grid_dim_z = 80
         
