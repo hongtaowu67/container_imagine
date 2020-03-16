@@ -46,7 +46,7 @@ class PickAndPour:
         self.pre_pour_y_axis = self.pre_pour_orn_mat[:, 1]
         self.pre_gripper_offset = -0.08
         self.pre_gripper_ee_offset = self.pre_gripper_offset * self.pre_pour_x_axis * np.sin(np.pi/4) - self.pre_gripper_offset * self.pre_pour_y_axis * np.cos(np.pi/4)
-        self.pre_gripper_ee_offset_z = 0.22
+        self.pre_gripper_ee_offset_z = 0.20
 
         # mid pour
         self.mid_pour_orn = [2.48899947, 0.0, -0.72901107]
@@ -55,12 +55,12 @@ class PickAndPour:
         # Rotation matrix
         self.mid_pour_orn_mat = angle2rotm(self.mid_pour_orn_angle, self.mid_pour_orn_axis)
         self.mid_pour_z_axis = self.mid_pour_orn_mat[:, 2]
-        self.mid_gripper_offset = -0.08
+        self.mid_gripper_offset = -0.07
         self.mid_gripper_ee_offset = self.mid_pour_z_axis * self.mid_gripper_offset
         self.mid_gripper_ee_offset_z = 0.20
 
         # end pour
-        self.end_pour_orn = [2.03187381,  0.        , -1.04386125]
+        self.end_pour_orn = [2.03187381,  0.0, -1.04386125]
         self.end_pour_orn_angle = np.linalg.norm(np.array(self.end_pour_orn))
         self.end_pour_orn_axis = np.array(self.end_pour_orn) / self.end_pour_orn_angle
 
@@ -68,7 +68,7 @@ class PickAndPour:
         self.end_pour_z_axis = self.end_pour_orn_mat[:, 2]
         self.end_gripper_offset = -0.14
         self.end_gripper_ee_offset = self.end_gripper_offset * self.end_pour_z_axis
-        self.end_gripper_ee_offset_z = 0.16
+        self.end_gripper_ee_offset_z = 0.15
 
         # # axis for rotation
         # self.rotate_axis = self.pre_pour_x_axis * np.sin(np.pi/4) + self.pre_pour_y_axis * np.cos(np.pi/4)
@@ -113,12 +113,12 @@ class PickAndPour:
 
         # time.sleep(1)
 
-        # mid_pour_pos_x = pour_pos[0] + self.mid_gripper_ee_offset[0]
-        # mid_pour_pos_y = pour_pos[1] + self.mid_gripper_ee_offset[1]
-        # mid_pour_pos_z = pour_pos[2] + self.mid_gripper_ee_offset_z
-        # mid_pour_pos = [mid_pour_pos_x, mid_pour_pos_y, mid_pour_pos_z]
+        mid_pour_pos_x = pour_pos[0] + self.mid_gripper_ee_offset[0]
+        mid_pour_pos_y = pour_pos[1] + self.mid_gripper_ee_offset[1]
+        mid_pour_pos_z = pour_pos[2] + self.mid_gripper_ee_offset_z
+        mid_pour_pos = [mid_pour_pos_x, mid_pour_pos_y, mid_pour_pos_z]
 
-        # self.robot.move_to(mid_pour_pos, self.mid_pour_orn)
+        self.robot.move_to(mid_pour_pos, self.mid_pour_orn, acc=0.1, vel=0.1)
 
         end_pour_pos_x = pour_pos[0] + self.end_gripper_ee_offset[0]
         end_pour_pos_y = pour_pos[1] + self.end_gripper_ee_offset[1]
@@ -151,11 +151,11 @@ class PickAndPour:
         self.robot.disconnect()
 
 
-# if __name__ == "__main__":
-#     PP = PickAndPour(0.3, 0.3)
-#     PP.pick()
-#     pour_pos = [-0.09652546464564028, -0.2380368459759542, 0.20159800696372998]
-#     PP.pour(pour_pos)
+if __name__ == "__main__":
+    PP = PickAndPour(1.0, 1.0)
+    PP.pick()
+    pour_pos = [-0.05436977597782472, -0.2981256988499615, 0.1985060011148454]
+    PP.pour(pour_pos)
 
 # >>> r2 = utils.angle2rotm(-np.pi*2/5, np.array([np.sin(np.pi/4), -np.cos(np.pi/4), 0]))
 # >>> axis = utils.rotm2angle(np.dot(r2, r1)[:3, :3])

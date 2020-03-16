@@ -40,7 +40,7 @@ class Containability(object):
         """
         super(Containability, self).__init__()
         # Hyperparameter
-        self.sphere_num = 225  # sphere number needs to be a 
+        self.sphere_num = 225 
         self.sphere_in_percentage_threshold = 0.08
         self.sphere_urdf = content_urdf
         self.sphere_in_percentage = 0.0
@@ -125,14 +125,18 @@ class Containability(object):
             Make sure that pybullet has already been connected before calling this function.             
         """
 
-        sphere = p.loadURDF(self.sphere_urdf)
+        sphere = p.loadURDF(self.sphere_urdf, basePosition=[0, 0, -1])
+
+        if "jelly_bean" in self.sphere_urdf:
+            p.resetBasePositionAndOrientation(sphere, posObj=[0, 0, -1], ornObj=p.getQuaternionFromEuler([0, np.pi/2, 0]))
+
         p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
                 lateralFriction=self.sphere_lateralfriction,
                 spinningFriction=0.5,
                 rollingFriction=0.5)
 
-        self.sphere_id.append(sphere)
         sphere_aabb = p.getAABB(sphere)
+        p.removeBody(sphere)
 
         self.sphere_x_range = sphere_aabb[1][0] - sphere_aabb[0][0]
         self.sphere_y_range = sphere_aabb[1][1] - sphere_aabb[0][1] 
