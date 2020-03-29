@@ -51,9 +51,9 @@ class Containability(object):
         self.y_sphere_num = 0
 
         # Restitution
-        self.sphere_restitution = 0.0
-        self.object_restitution = 0.0
-        self.plane_restitution = 0.0
+        self.sphere_restitution = 0.1
+        self.object_restitution = 0.1
+        self.plane_restitution = 0.1
 
         self.obj_urdf = obj_urdf
         self.containability = False
@@ -76,7 +76,7 @@ class Containability(object):
             self.physicsClient = p.connect(p.DIRECT)
         else:
             self.physicsClient = p.connect(p.GUI)
-        p.setGravity(0, 0, -10)
+        p.setGravity(0, 0, -9.81)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -107,7 +107,7 @@ class Containability(object):
         # Get the bounding box of the cup
         self.obj_curr_aabb = p.getAABB(self.obj_id)
 
-        # Raise the object up
+        # Raise the object up (obj is 0.1m above the plane)
         if self.obj_curr_aabb[0][2] <= 0.1:
             p.resetBasePositionAndOrientation(self.obj_id, 
                     posObj=(0, 0, -self.obj_curr_aabb[0][2]+0.1),
@@ -273,13 +273,13 @@ class Containability(object):
 
             # 3.0: Horizontal Acceleration
             elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
-                p.setGravity(0.5, 0.0, -10)
+                p.setGravity(0.5, 0.0, -9.81)
             elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
-                p.setGravity(-0.5, 0.0, -10)
+                p.setGravity(-0.5, 0.0, -9.81)
             elif i > int(9.5 * self.simulation_iteration / 10) and i <= int(9.75 * self.simulation_iteration / 10):
-                p.setGravity(0.0, 0.5, -10)
+                p.setGravity(0.0, 0.5, -9.81)
             elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
-                p.setGravity(0.0, -0.5, -10)
+                p.setGravity(0.0, -0.5, -9.81)
 
         ########## 2.0 Version of checking sphere ##########
         # Check the x, y, z coordinate of the sphere w.r.t to the x, y, z coordinate of the cup
@@ -325,6 +325,7 @@ class Containability(object):
             drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - np.array(t)).T)
 
             return drop_center_original_frame
+
 
     def disconnect_p(self):
         p.disconnect()
