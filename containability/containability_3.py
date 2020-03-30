@@ -30,13 +30,12 @@ sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
 
 class Containability(object):
     def __init__(self, obj_urdf, obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
-                 check_process=False, record_process=False, mp4_dir=None, object_name=None,
+                 check_process=False, mp4_dir=None, object_name=None,
                  content_urdf=sphere_urdf):
         """
         Args:
         - obj_zero_orn: the start orientation of the object in Euler Angle
         - check_process: if set True, the process will be real time
-        - record_process: if set True, the process will be recorded and saved as mp4 file
         """
         super(Containability, self).__init__()
         # Hyperparameter
@@ -61,7 +60,6 @@ class Containability(object):
         # Simulation Parameter
         self.simulation_iteration = 1500
         self.check_process = check_process
-        self.record_process = record_process
 
         # Sphere Information
         self.sphere_id = []
@@ -69,7 +67,7 @@ class Containability(object):
         self.sphere_drop_pos = []
         self.sphere_in_drop_pos = []
         self.sphere_drop_z = 0
-        self.sphere_lateralfriction=0.0
+        self.sphere_lateralfriction=0.005
 
         # Set the world
         if not check_process:
@@ -106,13 +104,6 @@ class Containability(object):
 
         # Get the bounding box of the cup
         self.obj_curr_aabb = p.getAABB(self.obj_id)
-
-        # Raise the object up (obj is 0.1m above the plane)
-        if self.obj_curr_aabb[0][2] <= 0.1:
-            p.resetBasePositionAndOrientation(self.obj_id, 
-                    posObj=(0, 0, -self.obj_curr_aabb[0][2]+0.1),
-                    ornObj=self.obj_zero_orn)
-            self.obj_curr_aabb = p.getAABB(self.obj_id)
 
         # Create constraint on the cup to fix its position
         p.changeDynamics(self.obj_id, -1, mass=1)
@@ -238,7 +229,9 @@ class Containability(object):
 
 
     def get_containability(self):
-        """ Test the pouring of sphere and check how many sphere remains after pouring. """
+        """ 
+        Test the pouring of sphere and check how many sphere remains after pouring. 
+        """
         # Load sphere
         self.load_sphere(self.obj_curr_aabb)
         # Reset sphere position
