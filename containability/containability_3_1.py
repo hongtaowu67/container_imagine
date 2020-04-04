@@ -26,7 +26,7 @@ import math
 import trimesh
 
 
-sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_mini.urdf"
+sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 
 class Containability(object):
     def __init__(self, obj_urdf, obj_vhacd_mesh, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
@@ -39,13 +39,14 @@ class Containability(object):
         """
         super(Containability, self).__init__()
         # Hyperparameter
-        self.sphere_num = 225 
+        self.sphere_num_max = 289
+        self.sphere_num_min = 64
         self.sphere_in_percentage_threshold = 0.08
         self.sphere_urdf = content_urdf
         self.sphere_in_percentage = 0.0
-        self.sphere_x_range = np.nan
-        self.sphere_y_range = np.nan
-        self.drop_sphere_num = self.sphere_num
+        self.sphere_x_range = 0.0
+        self.sphere_y_range = 0.0
+        self.drop_sphere_num = 0
         self.x_sphere_num = 0
         self.y_sphere_num = 0
 
@@ -89,7 +90,10 @@ class Containability(object):
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
 
         # Reset debug camera postion
-        p.resetDebugVisualizerCamera(1.0, 0, -44, [-0.05, -0.1, 1])
+        p.resetDebugVisualizerCamera(1.0, 0, -44, [-0.09, -0.1, 1])
+
+        # # Reset debug camera postion
+        # p.resetDebugVisualizerCamera(0.5, 0, -60, [-0.09, -0.17, 1])
 
         # Load plane
         self.plane_id = p.loadURDF("plane.urdf")
@@ -141,26 +145,29 @@ class Containability(object):
         obj_aabb_xy_range = [abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(2)]
         
         # Dropping from 1cm above the object
-        self.sphere_drop_z = obj_curr_aabb[1][2] + 0.01
+        self.sphere_drop_z = [obj_curr_aabb[1][2] + 0.01]
+        self.z_sphere_num = 1
 
-        sphere_per_length = math.sqrt(self.sphere_num/(obj_aabb_xy_range[0] * obj_aabb_xy_range[1]))
+        self.sphere_dis_x = self.sphere_x_range
+        self.x_sphere_num = int(obj_aabb_xy_range[0] / self.sphere_dis_x)
 
+        self.sphere_dis_y = self.sphere_y_range
+        self.y_sphere_num = int(obj_aabb_xy_range[1] / self.sphere_dis_y)
 
-        self.x_sphere_num = int(sphere_per_length * obj_aabb_xy_range[0])
-        self.y_sphere_num = int(sphere_per_length * obj_aabb_xy_range[1])
+        self.drop_sphere_num = self.x_sphere_num * self.y_sphere_num * self.z_sphere_num    
 
-        self.sphere_dis_x = obj_aabb_xy_range[0] / self.x_sphere_num
-        self.sphere_dis_y = obj_aabb_xy_range[1] / self.y_sphere_num
-
-        if self.sphere_dis_x < (self.sphere_x_range):
-            self.sphere_dis_x = self.sphere_x_range
-            self.x_sphere_num = int(obj_aabb_xy_range[0] / self.sphere_dis_x)
-
-        if self.sphere_dis_y < (self.sphere_y_range):
-            self.sphere_dis_y = self.sphere_y_range
-            self.y_sphere_num = int(obj_aabb_xy_range[1] / self.sphere_dis_y)
-        
-        self.drop_sphere_num = self.x_sphere_num * self.y_sphere_num
+        # Too many contents for dropping
+        if self.drop_sphere_num > self.sphere_num_max:
+            self.sphere_dist_scale = math.sqrt(self.drop_sphere_num / self.sphere_num_max)
+            self.x_sphere_num = int(obj_aabb_xy_range[0] / (self.sphere_dis_x * self.sphere_dist_scale))
+            self.y_sphere_num = int(obj_aabb_xy_range[1] / (self.sphere_dis_y * self.sphere_dist_scale))
+            self.drop_sphere_num = self.x_sphere_num * self.y_sphere_num * self.z_sphere_num
+        # Too few contents for dropping
+        elif self.drop_sphere_num < self.sphere_num_min:
+            self.z_sphere_num = int(self.sphere_num_min / self.drop_sphere_num) + 1
+            for i in range(1, self.z_sphere_num):
+                self.sphere_drop_z.append(self.sphere_drop_z[0] + i * 0.05)
+            self.drop_sphere_num = self.x_sphere_num * self.y_sphere_num * self.z_sphere_num
 
         # Set up sphere
         for i in range(self.drop_sphere_num):
@@ -171,16 +178,6 @@ class Containability(object):
                     rollingFriction=0.5)
 
             self.sphere_id.append(sphere)
-
-    
-    def reset_sphere_drop(self, obj_curr_aabb):
-        """ Get the sphere drop position around the obj_curr_obb. This function is called after the set_sphere"""
-
-        obj_aabb_xy_center = [(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(2)]
-        obj_aabb_xy_range = [abs(obj_curr_aabb[0][i] - obj_curr_aabb[1][i]) for i in range(2)]
-        
-        # Dropping from 1cm above the object
-        self.sphere_drop_z = obj_curr_aabb[1][2] + 0.01
         
         sphere_drop_x = np.linspace(-obj_aabb_xy_range[0]/2, obj_aabb_xy_range[0]/2, self.x_sphere_num) + obj_aabb_xy_center[0]
         sphere_drop_y = np.linspace(-obj_aabb_xy_range[1]/2, obj_aabb_xy_range[1]/2, self.y_sphere_num) + obj_aabb_xy_center[1]
@@ -190,16 +187,11 @@ class Containability(object):
 
         # Reset sphere position
         for i in range(self.drop_sphere_num):
-            y_idx = int(i / self.x_sphere_num)
-            x_idx = i % self.x_sphere_num
+            z_idx = int(i  / (self.x_sphere_num * self.y_sphere_num))
+            y_idx = int((i - z_idx * self.x_sphere_num * self.y_sphere_num) / self.x_sphere_num)
+            x_idx = (i - z_idx * self.x_sphere_num * self.y_sphere_num) % self.x_sphere_num
 
-            try:
-                sphere_start_pos = (sphere_drop_x[x_idx], sphere_drop_y[y_idx], self.sphere_drop_z)
-            except:
-                # For those out of range, position the sphere in a random xy in a higher layer
-                sphere_start_pos = (obj_aabb_xy_center[0] + np.random.random() * obj_aabb_xy_range[0]/2, \
-                                    obj_aabb_xy_center[1] + np.random.random() * obj_aabb_xy_range[1]/2, \
-                                    self.sphere_drop_z + 0.05)
+            sphere_start_pos = (sphere_drop_x[x_idx], sphere_drop_y[y_idx], self.sphere_drop_z[z_idx])
 
             self.sphere_drop_pos.append(sphere_start_pos)
             p.resetBasePositionAndOrientation(self.sphere_id[i], 
@@ -237,13 +229,10 @@ class Containability(object):
         """ 
         Test the pouring of sphere and check how many sphere remains after pouring. 
         """
+
         # Load sphere
         self.load_sphere(self.obj_curr_aabb)
-        # Reset sphere position
-        self.reset_sphere_drop(self.obj_curr_aabb)
 
-        ####### Get OBB of the object ########
-        ####### Get CoM of the object ########
 
         ########################### Drop Sphere Into ############################
         force = 1
@@ -253,14 +242,25 @@ class Containability(object):
         pivot = self.obj_com_zero
 
         for i in range(self.simulation_iteration):
+            
+            # Figure 3
+            # if i == int(1 * self.simulation_iteration / 100):
+            #     import ipdb; ipdb.set_trace()
+
+            # if i == int(1 * self.simulation_iteration / 50):
+            #     import ipdb; ipdb.set_trace()
+            
+            # if i == int(1 * self.simulation_iteration / 10):
+            #     import ipdb; ipdb.set_trace()
+
             p.stepSimulation()
 
             if self.check_process:
                 time.sleep(1. / 240.)
 
-            if i == int(1 * self.simulation_iteration / 10):
-                # Check the number of sphere in the bbox before moving the sphere away
-                sphere_in_num = self.checkincup(self.obj_curr_aabb)            
+            # if i == int(1 * self.simulation_iteration / 10):
+            #     # Check the number of sphere in the bbox before moving the sphere away
+            #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
             # 2.0: Shake Objects
             if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
@@ -279,6 +279,9 @@ class Containability(object):
                 p.setGravity(0.0, 0.5, -9.81)
             elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
                 p.setGravity(0.0, -0.5, -9.81)
+        
+        # Figure 3
+        # import ipdb; ipdb.set_trace()
 
         ########## 2.0 Version of checking sphere ##########
         # Check the x, y, z coordinate of the sphere w.r.t to the x, y, z coordinate of the cup
@@ -311,7 +314,7 @@ class Containability(object):
             self.sphere_in_drop_pos = np.array(self.sphere_in_drop_pos)
             x = np.mean(self.sphere_in_drop_pos[:, 0])
             y = np.mean(self.sphere_in_drop_pos[:, 1])
-            z = self.sphere_drop_z
+            z = self.sphere_drop_z[0]
             drop_center_curr_frame = np.array([x, y, z])
             
             # Debug
@@ -322,7 +325,7 @@ class Containability(object):
             t = self.obj_zero_pos
 
             # drop_center_original_frame = np.linalg.inv(R) @ (drop_center_curr_frame - np.array(t)).T
-            drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - np.array(t)).T)
+            drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - t).T)
 
             return drop_center_original_frame
 
@@ -331,8 +334,10 @@ class Containability(object):
         p.disconnect()
     
 
-# if __name__ == "__main__":
-#     obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Blue_Cup/Blue_Cup_mesh_0.urdf"
-#     obj_vhacd_mesh = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Blue_Cup/Blue_Cup_mesh_0_vhacd.obj"
-#     C = Containability(obj_urdf, obj_vhacd_mesh, check_process=True)
-#     C.get_containability()
+if __name__ == "__main__":
+    
+    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Blue_Cup/Blue_Cup_mesh_0.urdf"
+    obj_vhacd_mesh = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Blue_Cup/Blue_Cup_mesh_0_vhacd.obj"
+
+    C = Containability(obj_urdf, obj_vhacd_mesh, check_process=True)
+    C.get_containability()
