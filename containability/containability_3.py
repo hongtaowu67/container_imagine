@@ -292,6 +292,7 @@ class Containability(object):
             print("THIS IS NOT A CONTAINER!The sphere in percentage is: {}".format(sphere_num_percentage))
             print("/////////////////////////////////////")
             self.containability = False
+
         return self.containability, sphere_num_percentage
     
 

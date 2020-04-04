@@ -33,7 +33,7 @@ class PickAndPour:
         ]
         
         # start pour
-        # Unit: angle
+        # Unit: angle -pi/20
         self.pre_pour_orn = [3.02589579,  0.0, -0.16839265]
         self.pre_pour_orn_angle = np.linalg.norm(np.array(self.pre_pour_orn))
         self.pre_pour_orn_axis = np.array(self.pre_pour_orn) / self.pre_pour_orn_angle
@@ -48,7 +48,7 @@ class PickAndPour:
         self.pre_gripper_ee_offset = self.pre_gripper_offset * self.pre_pour_x_axis * np.sin(np.pi/4) - self.pre_gripper_offset * self.pre_pour_y_axis * np.cos(np.pi/4)
         self.pre_gripper_ee_offset_z = 0.20
 
-        # mid pour
+        # mid pour -pi/4
         self.mid_pour_orn = [2.48899947, 0.0, -0.72901107]
         self.mid_pour_orn_angle = np.linalg.norm(np.array(self.mid_pour_orn))
         self.mid_pour_orn_axis = np.array(self.mid_pour_orn) / self.mid_pour_orn_angle
@@ -59,7 +59,7 @@ class PickAndPour:
         self.mid_gripper_ee_offset = self.mid_pour_z_axis * self.mid_gripper_offset
         self.mid_gripper_ee_offset_z = 0.20
 
-        # end pour
+        # end pour -2*pi/5
         self.end_pour_orn = [2.03187381,  0.0, -1.04386125]
         self.end_pour_orn_angle = np.linalg.norm(np.array(self.end_pour_orn))
         self.end_pour_orn_axis = np.array(self.end_pour_orn) / self.end_pour_orn_angle
@@ -157,7 +157,8 @@ if __name__ == "__main__":
     pour_pos = [-0.05436977597782472, -0.2981256988499615, 0.1985060011148454]
     PP.pour(pour_pos)
 
-# >>> r2 = utils.angle2rotm(-np.pi*2/5, np.array([np.sin(np.pi/4), -np.cos(np.pi/4), 0]))
+# >>> r1 = utils.angle2rotm(np.pi, (1.0, 0.0, 0.0)) #Angle when the ee is pointing downward
+# >>> r2 = utils.angle2rotm(-np.pi*2/5, np.array([np.sin(np.pi/4), -np.cos(np.pi/4), 0])) #Angle offset when the bottle is rotating from
 # >>> axis = utils.rotm2angle(np.dot(r2, r1)[:3, :3])
 # >>> axis = np.array(axis)
 # >>> axis = axis[1:] * axis[0]
