@@ -48,7 +48,8 @@ class BottlePour(object):
         # Reset debug camera postion
         p.resetDebugVisualizerCamera(0.7, 0, -40, [-0.05, -0.1, 1])
 
-        self.simulation_iteration = 500
+        self.pour_simulation_iteration = 500
+        self.wait_simultaion_iteration = 100
         self.check_process = check_process
         p.setGravity(0, 0, -9.81)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -144,14 +145,20 @@ class BottlePour(object):
                 
                 pivot = self.pour_pos
 
-                for i in range(self.simulation_iteration):
+                for i in range(self.pour_simulation_iteration):
                     p.stepSimulation()
 
                     if self.check_process:
                         time.sleep(1. / 240.)           
 
-                    orn = p.getQuaternionFromEuler([0, 2*np.pi/5 * math.sin(math.pi * 2 * (i) / int(4 * self.simulation_iteration)), planar_angle])
+                    orn = p.getQuaternionFromEuler([0, 2*np.pi/5 * math.sin(math.pi * 2 * (i) / int(4 * self.pour_simulation_iteration)), planar_angle])
                     p.changeConstraint(bottle_constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+
+                for i in range(self.wait_simultaion_iteration):
+                    p.stepSimulation()
+
+                    if self.check_process:
+                        time.sleep(1. / 240.)      
                 
                 spill = self.checkspillage()
                 p.removeBody(self.bottle_id)
@@ -222,14 +229,14 @@ class BottlePour(object):
 
 
 if __name__ == "__main__":
-    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all/Ikea_Godtagbar_Candlestick/Ikea_Godtagbar_Candlestick_mesh_0.urdf"
+    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Amazon_Name_Card_Holder/Amazon_Name_Card_Holder_mesh_0.urdf"
     bottle_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/bottle/JuiceBottle_GeoCenter.urdf"
     content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-    pour_pos = np.array([-0.09539299830794334, -0.2818221267692606, 0.17964600372314465])
+    pour_pos = np.array([-0.11286258922851207, -0.28667539144459603, 0.14344400513172162])
     mp4_dir = "/home/hongtao/Desktop"
     obj_name = "Blue_Cup"
     BP = BottlePour(bottle_urdf, content_urdf, obj_urdf, pour_pos, obj_zero_pos=[0, 0, 1], indent_num=3,
-                    check_process=False)#, mp4_dir=mp4_dir, object_name=obj_name)
+                    check_process=True)#, mp4_dir=mp4_dir, object_name=obj_name)
 
     spill_list = BP.bottle_pour()
     print spill_list
