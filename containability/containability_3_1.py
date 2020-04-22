@@ -262,10 +262,10 @@ class Containability(object):
             #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
             # 2.0: Shake Objects
-            if i >= int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
+            if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
                 orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
-            elif i >= int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
+            elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
                 orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
                 p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
 
