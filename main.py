@@ -19,8 +19,8 @@ from processing.process import run_vhacd, write_urdf
 from containability.containability_3 import Containability
 from pick_and_pour_2 import PickAndPour
 
-content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/jelly_bean.urdf"
-data_name = "Ikea_Nojsam_Basket_Blue_jb"
+content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
+data_name = "Juvale_Chef_Hat_jb"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
