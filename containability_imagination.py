@@ -8,12 +8,13 @@ Mar 10, 2020
 import os
 import time
 import numpy as np
-from containability.containability_3 import Containability
+from containability.containability_3_1 import Containability
 
-content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/jelly_bean.urdf"
-obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container"
-result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0310_noncontainer_jellybean"
+content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
+obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all"
+result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0422_mm"
 obj_list = os.listdir(obj_dir)
+# obj_list=["Dunkin_Paper_Cup"]
 print(obj_list)
 
 for obj_name in obj_list:
@@ -36,18 +37,18 @@ for obj_name in obj_list:
     imagination_time = time.time() - start_time
 
     result_txt_name = os.path.join(result_dir, obj_name + ".txt")
-    # with open(result_txt_name, "w") as file1:
-    #     today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-    #     file1.write("Name: " + obj_name + "\n")
-    #     file1.write("Date: " + today + "\n")
-    #     file1.write("Content: " + content_urdf.split('/')[-1].split('.')[0] + "\n")
-    #     file1.write("Containability: " + str(containability_affordance) + "\n")
-    #     file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
-    #     file1.write("Pour position: " + str(list(drop_spot)) + "\n")
-    #     file1.write("Containability imagination time: " + str(imagination_time) + "\n")
-    #     file1.write("Object url: \n")
+    with open(result_txt_name, "w") as file1:
+        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+        file1.write("Name: " + obj_name + "\n")
+        file1.write("Date: " + today + "\n")
+        file1.write("Content: " + content_urdf.split('/')[-1].split('.')[0] + "\n")
+        file1.write("Containability: " + str(containability_affordance) + "\n")
+        file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
+        file1.write("Pour position: " + str(list(drop_spot)) + "\n")
+        file1.write("Containability imagination time: " + str(imagination_time) + "\n")
+        file1.write("Object url: \n")
     
-    # print("------------------")
-    # print(obj_name)
-    # print("Containability: {}".format(containability_affordance))
-    # print("Sphere Percent: {}".format(sphere_in_percentage))
+    print("------------------")
+    print(obj_name)
+    print("Containability: {}".format(containability_affordance))
+    print("Sphere Percent: {}".format(sphere_in_percentage))
