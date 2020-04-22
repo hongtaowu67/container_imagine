@@ -26,7 +26,8 @@ class PickAndPour:
         ]
         
         # Unit: angle
-        self.pre_pour_orn = [0.08087661589319343, -2.4383649694242595, 0.8312275202696641]
+        # self.pre_pour_orn = [0.08087661589319343, -2.4383649694242595, 0.8312275202696641]
+        self.pre_pour_orn = [0.07419675171714485, -2.1324334762895134, 1.0622946386306489]
         self.pre_pour_orn_angle = np.linalg.norm(np.array(self.pre_pour_orn))
         self.pre_pour_orn_axis = np.array(self.pre_pour_orn) / self.pre_pour_orn_angle
 
@@ -35,7 +36,7 @@ class PickAndPour:
 
         # Z axis for offset
         self.pre_pour_z_axis = self.pre_pour_orn_mat[:, 2]
-        self.gripper_offset = 0.08
+        self.gripper_offset = 0.12 # 0.08
         self.gripper_ee_offset = -self.gripper_offset * self.pre_pour_z_axis
 
     def pick(self):
@@ -58,7 +59,7 @@ class PickAndPour:
     def pour(self, pour_pos):
         pre_pour_pos_x = pour_pos[0] + self.gripper_ee_offset[0]
         pre_pour_pos_y = pour_pos[1] + self.gripper_ee_offset[1]
-        pre_pour_pos_z = pour_pos[2] + 0.185
+        pre_pour_pos_z = pour_pos[2] + 0.14 # 0.185
         pre_pour_pos = [pre_pour_pos_x, pre_pour_pos_y, pre_pour_pos_z]
         
         self.robot.go_home()
