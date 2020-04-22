@@ -8,9 +8,9 @@ Mar 10, 2020
 
 import os
 
-data_folder = "/home/hongtao/Dropbox/ICRA2021/data/test_set/NonContainer"
+data_folder = "/home/hongtao/Dropbox/ICRA2021/benchmark/0328_mm"
 # the index for the containability in the txt file
-txt_containability_idx = 2
+txt_containability_idx = 3
 obj_list = os.listdir(data_folder)
 
 obj_num = 0
@@ -18,17 +18,17 @@ container_num = 0
 noncontainer_num = 0
 for obj_name in obj_list:
     obj_num += 1
-    obj_txt = obj_name + ".txt"
-    obj_path = os.path.join(data_folder, obj_name, obj_txt)
+    obj_txt = obj_name
+    obj_path = os.path.join(data_folder, obj_txt)
     file1 = open(obj_path, 'r')
 
     obj_containability = file1.readlines()[txt_containability_idx]
     if "True" in obj_containability:
         container_num += 1
-        print("Container: ", obj_name)
+        # print("Container: ", obj_name)
     elif "False" in obj_containability:
         noncontainer_num += 1
-        # print("Noncontainer: ", obj_name)
+        print("Noncontainer: ", obj_name)
     else:
         raise ValueError ("The object " + obj_name + " is not a container or a noncontainer!")
 

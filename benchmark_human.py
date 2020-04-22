@@ -13,12 +13,12 @@ import os
 import ast
 import numpy as np
 
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0404_mm"
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0406_mm"
 txt_containability_idx = 3
 txt_spill_idx = 6
 check_spill = True
 
-csv_path = "/home/hongtao/Dropbox/ICRA2021/annotation/0312/annotation_all/annotation_0312.csv"
+csv_path = "/home/hongtao/Dropbox/ICRA2021/annotation/0321/annotation_all/annotation_0321_label.csv"
 obj_dict = {}
 
 with open(csv_path, 'r') as csvfile:
@@ -101,7 +101,7 @@ for obj_txt in obj_list:
 
                 obj_no_spill = False
                 for spill in obj_spill_list:
-                    if spill < 1:
+                    if spill < 2:
                         obj_no_spill = True
                         break
 
