@@ -16,7 +16,7 @@ import numpy as np
 from capture_view_pick import AutoCapture
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
-from containability.containability_3 import Containability
+from containability.containability_3_1 import Containability
 from pick_and_pour_2 import PickAndPour
 
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
@@ -87,11 +87,12 @@ preprocessing_time = time.time() - start_time - autocapture_time
 ################# Containability Imagination #################
 object_name = data_name + "_mesh_0"
 obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
+obj_vhacd_mesh = os.path.join(data_root_dir, data_name, object_name + "_mesh_0_vhacd.obj")
 
 mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
-C = Containability(obj_urdf, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
+C = Containability(obj_urdf, obj_vhacd_mesh, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
         check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
