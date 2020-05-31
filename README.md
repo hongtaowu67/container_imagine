@@ -6,7 +6,7 @@ The project has been tested on python 2.7.
 
 Pybullet
 
-(TSDF Fusion)[https://github.com/andyzeng/tsdf-fusion]: Need to compile this code.
+[TSDF Fusion](https://github.com/andyzeng/tsdf-fusion): Need to compile this code.
 
 
 # Module
