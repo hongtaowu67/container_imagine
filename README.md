@@ -35,7 +35,7 @@ rosrun image_view image_view image:=/aruco_single/result
 ```
 
 ### Real Robot Experiment
-TODO: Calibration
+TODO: Calibration (can test the chessboard calibration method)
 
 The real robot experiment use *containability_3_1.py* to imagine the containability (**not tested yet**). To run the real robot experiment, run
 ```shell
