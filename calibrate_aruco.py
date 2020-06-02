@@ -1,5 +1,11 @@
 #! /usr/bin/env python
 
+"""
+Calibration with an ArUco tag.
+Use aruco_ros ROS package to detect the pose of the tag.
+Author: Hongtao Wu
+"""
+
 
 import numpy as np
 import rospy
