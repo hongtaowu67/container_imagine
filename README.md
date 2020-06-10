@@ -9,7 +9,7 @@ We provide a simple calibration process for hand-eye calibration. The calibratio
 
 Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/jaydenwu17/camera_calibration)).
 
-In this project, we are using the PrimeSense Carmine 1.08 and a UR5 robot.
+In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
 
 ### Instruction
 1. Print an ArUco Tag from [here](http://chev.me/arucogen/). Mark down the marker ID and the dictionary it belongs to. Also, measure the marker size (in meter).
