@@ -3,8 +3,8 @@
 """
 Calibration with a checkerboard.
 Use capture_pose_rgb_pose ROS package to capture the pose of the checkerboard
-capture_pose_rgb_pose ROS package: https://github.com/hongtaowu67/capture_pose_rgb_depth
-roslaunch capture_pose_rgb_depth capture in the terminal before running the calibrate_check
+checkerboard_ros ROS package: https://github.com/hongtaowu67/checkerboard_ros
+rosrun checkerboard_ros capture_checkerboard in the terminal before running the calibrate_check
 """
 
 
