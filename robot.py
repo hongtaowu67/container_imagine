@@ -137,6 +137,6 @@ class Robot(object):
 
 # Test
 if __name__ == "__main__":
-    robot = Robot(acc=1.0, vel=1.0, gripper_on=False)
+    robot = Robot(acc=0.5, vel=0.5, gripper_on=False)
     robot.go_home()
     robot.disconnect()
