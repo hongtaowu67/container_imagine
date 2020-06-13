@@ -83,7 +83,7 @@ class Containability(object):
         if mp4_dir is not None:
             self.save_mp4_dir = mp4_dir
             self.object_name = object_name
-            mp4_file_name = self.object_name + ".mp4"
+            mp4_file_name = self.object_name + "_contain.mp4"
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
             p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
 
