@@ -35,7 +35,8 @@ class PickAndPour:
             # Align the ee with the bottle
             (0.30035709862309257, -0.23779897928815466, 0.48355924356743263, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Pick the bottle
-            (0.30037875345274245, -0.23780397011114007, 0.18357043252396407, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
+            # (0.30037875345274245, -0.23780397011114007, 0.18357043252396407, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
+            (0.30037875345274245, -0.23780397011114007, 0.18357043252396407-0.08, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Raise the bottle up
             (0.30037875345274245, -0.23780397011114007, 0.18357043252396407+0.3, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Rotate the bottle to horizontal
@@ -53,53 +54,11 @@ class PickAndPour:
             (2.1296579837799072, -1.8189194838153284, 1.6174530982971191, 0.1988968849182129, 1.343645453453064-np.pi/2, -0.7743986288653772),
             # Rotate the bottle to horizontal
             (2.1975133419036865, -1.698341194783346, 1.4599494934082031, -0.8148558775531214, -1.6408804098712366, -0.9291647116290491)
-
         ]
         
-        # Pour angles: pre, mid, end
-        self.pre_pour_rotate_angle = np.pi/20
-        self.mid_pour_rotate_angle = np.pi/4
-        self.end_pour_rotate_angle = -np.pi/3
-        self.pour_rotate_intervals = 10
-
-        # start pour
-        # Unit: angle -pi/20
-        self.pre_pour_orn = [3.02589579,  0.0, -0.16839265]
-        self.pre_pour_orn_angle = np.linalg.norm(np.array(self.pre_pour_orn))
-        self.pre_pour_orn_axis = np.array(self.pre_pour_orn) / self.pre_pour_orn_angle
-
-        # Rotation matrix
-        self.pre_pour_orn_mat = angle2rotm(self.pre_pour_orn_angle, self.pre_pour_orn_axis)
-
-        # axis for offset
-        self.pre_pour_x_axis = self.pre_pour_orn_mat[:, 0]
-        self.pre_pour_y_axis = self.pre_pour_orn_mat[:, 1]
-        self.pre_gripper_offset = -0.06
-        self.pre_gripper_ee_offset = self.pre_gripper_offset * self.pre_pour_x_axis * np.sin(np.pi/4) - self.pre_gripper_offset * self.pre_pour_y_axis * np.cos(np.pi/4)
-        self.pre_gripper_ee_offset_z = 0.20
-
-        # mid pour -pi/4
-        self.mid_pour_orn = [2.48899947, 0.0, -0.72901107]
-        self.mid_pour_orn_angle = np.linalg.norm(np.array(self.mid_pour_orn))
-        self.mid_pour_orn_axis = np.array(self.mid_pour_orn) / self.mid_pour_orn_angle
-        # Rotation matrix
-        self.mid_pour_orn_mat = angle2rotm(self.mid_pour_orn_angle, self.mid_pour_orn_axis)
-        self.mid_pour_z_axis = self.mid_pour_orn_mat[:, 2]
-        self.mid_gripper_offset = -0.07
-        self.mid_gripper_ee_offset = self.mid_pour_z_axis * self.mid_gripper_offset
-        self.mid_gripper_ee_offset_z = 0.20
-
-        # end pour -2*pi/5
-        self.end_pour_orn = [2.03187381,  0.0, -1.04386125]
-        self.end_pour_orn_angle = np.linalg.norm(np.array(self.end_pour_orn))
-        self.end_pour_orn_axis = np.array(self.end_pour_orn) / self.end_pour_orn_angle
-
-        self.end_pour_orn_mat = angle2rotm(self.end_pour_orn_angle, self.end_pour_orn_axis)
-        self.end_pour_z_axis = self.end_pour_orn_mat[:, 2]
-        self.end_gripper_offset = -0.14
-        self.end_gripper_ee_offset = self.end_gripper_offset * self.end_pour_z_axis
-        self.end_gripper_ee_offset_z = 0.15
-
+        # Pour angles
+        self.end_pour_rotate_angle = -2*np.pi/5
+        self.pour_rotate_intervals = 6
 
     # Pick horizontal bottle
     def pick_horizontal(self):
@@ -189,15 +148,20 @@ class PickAndPour:
     # The planar angle is w.r.t the y-axis of the robot
     def pour_multi_orn(self, imagined_pour_pos, bottle_angle=np.pi/4):
         """
-        Pour with multiple bottle angle. Does not work for np.pi/2
+        Pour with multiple bottle angle.
         """
+
+        pre_pour_pos = self.get_pour_pos(0.0, imagined_pour_pos, bottle_angle)
+        pre_pour_orn = self.get_pour_orn(0.0, bottle_angle)
+        pre_pour_pos[-1] = pre_pour_pos[-1] + 0.1
+        self.robot.move_to(pre_pour_pos.tolist(), pre_pour_orn.tolist(), acc=0.1, vel=0.1)
+
         for i in range(self.pour_rotate_intervals + 1):
             pour_angle = i / self.pour_rotate_intervals * self.end_pour_rotate_angle
             pour_pos = self.get_pour_pos(pour_angle, imagined_pour_pos, bottle_angle)
             pour_orn = self.get_pour_orn(pour_angle, bottle_angle)
+
             self.robot.move_to(pour_pos.tolist(), pour_orn.tolist(), acc=0.1, vel=0.1)
-            print "pour_pos: ", pour_pos
-            print "pour_orn: ", pour_orn
 
         current_config = self.robot.get_config()
         pour_config = current_config
@@ -259,8 +223,8 @@ class PickAndPour:
             - pour_angle: rotating angle, e.g. -np.pi/4
         """
         # bottle lower tips in the ee frame
-        ee_offset_x = 0.07 * np.cos(3*np.pi/4)
-        ee_offset_y = 0.07 * np.sin(3*np.pi/4)
+        ee_offset_x = 0.078 * np.cos(3*np.pi/4)
+        ee_offset_y = 0.078 * np.sin(3*np.pi/4)
         ee_offset_z = 0.195
         ee_offset = np.array([ee_offset_x, ee_offset_y, ee_offset_z])
 
@@ -291,10 +255,10 @@ class PickAndPour:
 if __name__ == "__main__":
     PP = PickAndPour(0.5, 0.5)
     PP.pick_vertical()
-    pour_pos = [-0.0955295, -0.29171583, 0.202606]
+    pour_pos = [-0.14513142, -0.35582313,  0.14435201]
 
     # PP.pour_single_orn(pour_pos)
-    PP.pour_multi_orn(pour_pos, bottle_angle=np.pi)
+    PP.pour_multi_orn(pour_pos, bottle_angle=np.pi/4)
 
     # pre_pour_angle = -np.pi/20
     # mid_pour_angle = -np.pi/4
