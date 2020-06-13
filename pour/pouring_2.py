@@ -44,7 +44,7 @@ class BottlePour(object):
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
             p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
         
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        # p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         # Reset debug camera postion
         p.resetDebugVisualizerCamera(0.7, 0, -40, [-0.05, -0.1, 1])
 
@@ -92,17 +92,20 @@ class BottlePour(object):
         self.obj_y_range = self.obj_aabb[1][1] - self.obj_aabb[0][1]
         self.obj_digonal_len = math.sqrt(self.obj_x_range * self.obj_x_range + self.obj_y_range * self.obj_y_range)
         self.indent_len = self.obj_digonal_len / (3 * self.indent_num) # half the length of the diagonal
+        self.canonical_bottle_angle = np.pi/4
+        self.pivot_pos_list = []
 
 
     def bottle_pour(self, indent=0.01):
         """
         Rotate the bottle about the pour_pos.
         """
-        spill_list = []
+        self.spill_list = []
 
         for k in range(self.pour_num):
             planar_angle = k / self.pour_num * 2 * np.pi
             spill_angle_list = []
+            pivot_pos_angle_list = []
 
             for j in range(self.indent_num):
 
@@ -160,14 +163,16 @@ class BottlePour(object):
                     if self.check_process:
                         time.sleep(1. / 240.)      
                 
-                spill = self.checkspillage()
+                spill = self.check_spillage()
                 p.removeBody(self.bottle_id)
 
                 spill_angle_list.append(spill)
+                pivot_pos_angle_list.append(pivot)
 
-            spill_list.append(spill_angle_list)
+            self.spill_list.append(spill_angle_list)
+            self.pivot_pos_list.append(pivot_pos_angle_list)
 
-        return spill_list
+        return self.spill_list
 
     def set_content(self, planar_angle):
         """
@@ -209,7 +214,7 @@ class BottlePour(object):
             p.stepSimulation()
 
 
-    def checkspillage(self):
+    def check_spillage(self):
         """
         Check every content and see if it is on the ground.
         """
@@ -222,6 +227,24 @@ class BottlePour(object):
         
         return spill_num
 
+    def best_pour_pos_orn(self):
+        """
+        Supporting only the canonical bottle angle at the moment
+        
+        Return:
+            - pivot_pos: (3, ) numpy array, the pouring position
+            - bottle_angle: angle for pouring
+        """
+        # Spill angle list corresponds to the canonical bottle angle
+        canonical_spill_angle_list = np.array(self.spill_list[1])
+        spill_min_idx = np.argmin(canonical_spill_angle_list)
+
+        if canonical_spill_angle_list[spill_min_idx] == 0:
+            pivot_pos = self.pivot_pos_list[1][spill_min_idx] - self.obj_zero_pos
+            bottle_angle = self.canonical_bottle_angle
+        
+        return pivot_pos, bottle_angle
+        
 
     def disconnect_p(self):
         p.disconnect()
@@ -229,17 +252,24 @@ class BottlePour(object):
 
 
 if __name__ == "__main__":
-    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Amazon_Name_Card_Holder/Amazon_Name_Card_Holder_mesh_0.urdf"
+    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Blue_Cup/Blue_Cup_mesh_0.urdf"
     bottle_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/bottle/JuiceBottle_GeoCenter.urdf"
     content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-    pour_pos = np.array([-0.11286258922851207, -0.28667539144459603, 0.14344400513172162])
+    pour_pos = np.array([-0.08763265508145837, -0.26190104459071484, 0.19611099708080304])
     mp4_dir = "/home/hongtao/Desktop"
     obj_name = "Blue_Cup"
     BP = BottlePour(bottle_urdf, content_urdf, obj_urdf, pour_pos, obj_zero_pos=[0, 0, 1], indent_num=3,
-                    check_process=True)#, mp4_dir=mp4_dir, object_name=obj_name)
+                    check_process=False)#, mp4_dir=mp4_dir, object_name=obj_name)
 
     spill_list = BP.bottle_pour()
+    print "spill list"
     print spill_list
+    print "pivot_pos_list"
+    print BP.pivot_pos_list
+
+    pivot_pos, bottle_angle = BP.best_pour_pos_orn()
+    print "pivot position: ", pivot_pos
+    print "bottle angle: ", bottle_angle
     BP.disconnect_p()
 
 
