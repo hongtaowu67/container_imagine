@@ -20,8 +20,8 @@ from containability.containability_3_1 import Containability
 from pick_and_pour_2 import PickAndPour
 
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Juvale_Chef_Hat_jb"
-pouring = True
+data_name = "Dunkin_Cup_mm"
+pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
 
@@ -75,24 +75,22 @@ output_file = os.path.join(data_root_dir, data_name, object_name + '_vhacd.obj')
 run_vhacd(vhacd_dir, input_file, output_file)
 
 # URDF file
-urdf_path = os.path.join(data_root_dir, data_name, object_name + '.urdf')
+obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
 obj_original_file = object_name + '.obj'
 obj_vhacd_file = object_name + '_vhacd.obj'
-write_urdf(urdf_path, obj_original_file, obj_vhacd_file)
+write_urdf(obj_urdf, obj_original_file, obj_vhacd_file)
 
 preprocessing_time = time.time() - start_time - autocapture_time
 ##############################################################
 
 
 ################# Containability Imagination #################
-object_name = data_name + "_mesh_0"
-obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
-obj_vhacd_mesh = os.path.join(data_root_dir, data_name, object_name + "_mesh_0_vhacd.obj")
+obj_vhacd_path = os.path.join(data_root_dir, data_name, obj_vhacd_file)
 
 mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
-C = Containability(obj_urdf, obj_vhacd_mesh, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
+C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
         check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
