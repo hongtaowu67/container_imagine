@@ -16,6 +16,7 @@ import time
 import math
 import trimesh
 
+
 class BottlePour(object):
     def __init__(self, bottle_urdf, content_urdf, obj_urdf, pour_pos, indent_num=1, content_num=40,
                 obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
@@ -174,6 +175,7 @@ class BottlePour(object):
 
         return self.spill_list
 
+
     def set_content(self, planar_angle):
         """
         Set contents to the position (in the bottle).
@@ -227,24 +229,46 @@ class BottlePour(object):
         
         return spill_num
 
+
     def best_pour_pos_orn(self):
         """
-        Supporting only the canonical bottle angle at the moment
+        Calculate the best pouring position and orientation.
         
         Return:
             - pivot_pos: (3, ) numpy array, the pouring position
             - bottle_angle: angle for pouring
         """
-        # Spill angle list corresponds to the canonical bottle angle
-        canonical_spill_angle_list = np.array(self.spill_list[1])
-        spill_min_idx = np.argmin(canonical_spill_angle_list)
+        print "pivot_pos_list"
+        print self.pivot_pos_list
 
-        if canonical_spill_angle_list[spill_min_idx] == 0:
-            pivot_pos = self.pivot_pos_list[1][spill_min_idx] - self.obj_zero_pos
-            bottle_angle = self.canonical_bottle_angle
+        # np.pi/4, 0, -np.pi/4, 3*np.pi/4, -np.pi/2, np.pi, -3*np.pi/4, np.pi/2
+        bottle_angle_order = [1, 0, 7, 3, 6, 4, 5, 2]
+        min_spill_num = self.content_num
+
+        for idx in bottle_angle_order:
+            # Spill angle list corresponds to the canonical bottle angle np.pi/4
+            spill_angle_list = np.array(self.spill_list[idx])
+            spill_angle_min_idx = np.argmin(spill_angle_list)
+
+            # If 0 is in the spill_angle_list, we are done
+            if 0 in spill_angle_list:
+                pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
+                bottle_angle = idx * np.pi/4
+                if bottle_angle > np.pi:
+                    bottle_angle -= 2*np.pi 
+                return pivot_pos, bottle_angle
+
+            # Update the min_spill_num
+            if spill_angle_list[spill_angle_min_idx] < min_spill_num:
+                min_spill_num = spill_angle_list[spill_angle_min_idx]
+                pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
+                bottle_angle = idx * np.pi/4
+            
+        if bottle_angle > np.pi:
+            bottle_angle -= 2*np.pi
         
         return pivot_pos, bottle_angle
-        
+
 
     def disconnect_p(self):
         p.disconnect()
