@@ -20,7 +20,7 @@ from utils import make_rigid_transformation
 
 class Robot(object):
 
-    def __init__(self, workspace_limits=None, tcp_host_ip='172.22.22.2', calibrate=False, acc=1, vel=1, gripper_on=True):
+    def __init__(self, workspace_limits=None, tcp_host_ip='172.22.22.2', calibrate=False, acc=1, vel=1, gripper_on=True, go_home=True):
         '''
         UR5 Robot
 
@@ -49,7 +49,8 @@ class Robot(object):
             self.robot.set_tool_voltage(24)
             self.open_gripper()
 
-        self.go_home()
+        if go_home:
+            self.go_home()
 
         #TODO: Initialize the camera
 
