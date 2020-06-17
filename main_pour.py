@@ -5,7 +5,7 @@ Real Object Containability Imagination:
     3. Process the object with VHACD for convex decomposition
     4. Containability imagination
     5. Pouring imagination
-    5. Pour beads into the object with a bottle
+    5. Pour beads into the object with a cup
 
 Author: Hongtao Wu
 June 10, 2020
@@ -21,12 +21,12 @@ from capture_view_pick import AutoCapture
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
 from containability.containability_3_1 import Containability
-from pour.pouring_2 import BottlePour
+from pour.pouring_3 import CupPour
 from pick_and_pour_3 import PickAndPour
 
-bottle_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/bottle/JuiceBottle_GeoCenter.urdf"
+cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "White_Lap_Cup_pour"
+data_name = "Origami_Pink_Cup_pour"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -92,6 +92,7 @@ preprocessing_time = time.time() - start_time - autocapture_time
 
 
 ################# Containability Imagination #################
+print "Start containability imagination..."
 obj_vhacd_path = os.path.join(data_root_dir, data_name, obj_vhacd_file)
 
 mp4_dir = os.path.join(data_root_dir, data_name)
@@ -117,13 +118,13 @@ containability_imagination_time = time.time() - start_time - autocapture_time - 
 if pouring:
     if containability_affordance:
         print "Start pouring imagination..."
-        BP = BottlePour(bottle_urdf, content_urdf, obj_urdf, drop_spot, indent_num=3, content_num=60,
+        BP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, indent_num=3, content_num=60,
                         obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=mp4_dir, object_name=object_name)
-        spill_list = BP.bottle_pour()
+        spill_list = BP.cup_pour()
         BP.disconnect_p()
         print "Spill List: {}".format(spill_list)
 
-        imagined_pour_pos, imagined_bottle_angle = BP.best_pour_pos_orn()
+        imagined_pour_pos, imagined_cup_angle = BP.best_pour_pos_orn()
     else:
         spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
 pouring_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time
@@ -135,7 +136,7 @@ if pouring:
     if containability_affordance:
         PP = PickAndPour(acc=0.5, vel=0.5)
         PP.pick_vertical()
-        PP.pour_multi_orn(imagined_pour_pos, bottle_angle=imagined_bottle_angle)
+        PP.pour_multi_orn(imagined_pour_pos, bottle_angle=imagined_cup_angle)
     pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time - pouring_imagination_time
 else:
     pouring_time = np.nan
@@ -150,7 +151,9 @@ with open(result_txt_name, "w") as file1:
     file1.write("Date: " + today + "\n")
     file1.write("Containability: " + str(containability_affordance) + "\n")
     file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
-    file1.write("Pour position: " + str(list(drop_spot)) + "\n")
+    file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
+    file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
+    file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
     file1.write("Spill List: " + str(list(spill_list)) + "\n")
     file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
     file1.write("Model processing time: " + str(preprocessing_time) + "\n")
