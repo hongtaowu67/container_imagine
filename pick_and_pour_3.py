@@ -12,6 +12,7 @@ import os
 import time
 
 import numpy as np
+import math
 import cv2
 import rospy
 
@@ -19,7 +20,7 @@ from robot import Robot
 from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
 from utils import angle2rotm, make_rigid_transformation, rotm2angle
 
-
+import ikfast.ikfastpy
 
 
 class PickAndPour:
@@ -36,7 +37,8 @@ class PickAndPour:
             (0.30035709862309257, -0.23779897928815466, 0.48355924356743263, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Pick the bottle
             # (0.30037875345274245, -0.23780397011114007, 0.18357043252396407, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
-            (0.30037875345274245, -0.23780397011114007, 0.18357043252396407-0.08, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
+            # (0.30037875345274245, -0.23780397011114007, 0.18357043252396407-0.08, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
+            (0.30037875345274245, -0.23780397011114007, 0.18357043252396407-0.12, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Raise the bottle up
             (0.30037875345274245, -0.23780397011114007, 0.18357043252396407+0.3, 1.1105965952328265, 1.110547025211203, -0.00017257292410390916),
             # Rotate the bottle to horizontal
@@ -47,7 +49,7 @@ class PickAndPour:
 
         self.pick_bottle_joint = [
             # Move to the bottle top
-            (2.1296579837799072, -1.8189194838153284, 1.6174530982971191, 0.1988968849182129, 1.343645453453064-np.pi/2, -0.7743986288653772),
+            (2.1296579837799072, -1.8189194838153284, 1.6174530982971191, 0.1988968849182129, 1.343645453453064, -0.7743986288653772),
             # Raise the bottle up
             (2.1296579837799072, -1.8189194838153284, 1.6174530982971191, 0.1988968849182129, 1.343645453453064, -0.7743986288653772),
             # Rotate the bottle around
@@ -57,8 +59,13 @@ class PickAndPour:
         ]
         
         # Pour angles
-        self.end_pour_rotate_angle = -2*np.pi/5
-        self.pour_rotate_intervals = 6
+        self.end_pour_rotate_angle = -np.pi/4
+        self.pour_rotate_intervals = 8
+
+        self.shake_cup = False
+
+        self.cup_ee_horizontal_offset = 0.048
+        self.cup_ee_vertical_offset = 0.207
 
     # Pick horizontal bottle
     def pick_horizontal(self):
@@ -88,7 +95,7 @@ class PickAndPour:
         # Close the gripper
         self.robot.close_gripper()
         # Raise the bottle up
-        self.robot.move_to_joint(self.pick_bottle_joint[1])
+        self.robot.move_to(self.pick_bottle_links[3][:3], self.pick_bottle_links[3][3:], self.acc, self.vel)
         # self.robot.move_to(self.pick_bottle_links[3][:3], self.pick_bottle_links[3][3:], self.acc, self.vel)
         # Turn the bottle around
         self.robot.move_to_joint(self.pick_bottle_joint[2])
@@ -150,36 +157,66 @@ class PickAndPour:
         """
         Pour with multiple bottle angle.
         """
-
-        pre_pour_pos = self.get_pour_pos(0.0, imagined_pour_pos, bottle_angle)
-        pre_pour_orn = self.get_pour_orn(0.0, bottle_angle)
+        # Compensate for the cup angle
+        pre_pour_pos = self.get_pour_pos(0.0286, imagined_pour_pos, bottle_angle)
+        pre_pour_orn = self.get_pour_orn(0.0286, bottle_angle)
         pre_pour_pos[-1] = pre_pour_pos[-1] + 0.1
         self.robot.move_to(pre_pour_pos.tolist(), pre_pour_orn.tolist(), acc=0.1, vel=0.1)
 
-        for i in range(self.pour_rotate_intervals + 1):
+        # for i in range(self.pour_rotate_intervals + 1):
+        #     pour_angle = i / self.pour_rotate_intervals * self.end_pour_rotate_angle
+        #     pour_pos = self.get_pour_pos(pour_angle, imagined_pour_pos, bottle_angle)
+        #     pour_orn = self.get_pour_orn(pour_angle, bottle_angle)
+
+        #     self.robot.move_to(pour_pos.tolist(), pour_orn.tolist(), acc=0.1, vel=0.1)
+
+        # current_config = self.robot.get_config()
+        # pour_config = current_config
+
+        # # Shake the bottle
+        # if self.shake_cup:
+        #     rotate_angle = np.pi/180 * 3
+        #     shake_config = pour_config
+        #     shake_config_last = shake_config[-1]
+        #     for i in range(6):
+        #         if i % 2 == 0:
+        #             shake_config[-1] = shake_config_last + rotate_angle
+        #             self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+        #         else:
+        #             shake_config[-1] = shake_config_last - rotate_angle
+        #             self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+            
+        #     shake_config[-1] = shake_config_last
+        #     self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+
+        pour_angle = 0.0286
+        pour_pos = self.get_pour_pos(pour_angle, imagined_pour_pos, bottle_angle)
+        pour_orn = self.get_pour_orn(pour_angle, bottle_angle)
+        self.robot.move_to(pour_pos.tolist(), pour_orn.tolist(), acc=0.1, vel=0.1)
+
+        # via_angle = self.end_pour_rotate_angle / 2
+        # via_pos = self.get_pour_pos(via_angle, imagined_pour_pos, bottle_angle)
+        # via_orn = self.get_pour_orn(via_angle, bottle_angle)
+        # via_config = tuple(via_pos.tolist() + via_orn.tolist())
+
+        # target_angle = self.end_pour_rotate_angle
+        # target_pos = self.get_pour_pos(target_angle, imagined_pour_pos, bottle_angle)
+        # target_orn = self.get_pour_orn(target_angle, bottle_angle)
+        # target_config = tuple(target_pos.tolist() + target_orn.tolist())
+
+        r = 0.008
+        a = 0.1
+        v = 0.1
+        pose_config_list1 = []
+        for i in range(0, self.pour_rotate_intervals + 1):
+
             pour_angle = i / self.pour_rotate_intervals * self.end_pour_rotate_angle
             pour_pos = self.get_pour_pos(pour_angle, imagined_pour_pos, bottle_angle)
             pour_orn = self.get_pour_orn(pour_angle, bottle_angle)
+            pose_config_list1.append((pour_pos.tolist() + pour_orn.tolist()))
+            
 
-            self.robot.move_to(pour_pos.tolist(), pour_orn.tolist(), acc=0.1, vel=0.1)
-
-        current_config = self.robot.get_config()
-        pour_config = current_config
-
-        # Shake the bottle
-        rotate_angle = np.pi/180 * 3
-        shake_config = pour_config
-        shake_config_last = shake_config[-1]
-        for i in range(6):
-            if i % 2 == 0:
-                shake_config[-1] = shake_config_last + rotate_angle
-                self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
-            else:
-                shake_config[-1] = shake_config_last - rotate_angle
-                self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
-        
-        shake_config[-1] = shake_config_last
-        self.robot.move_to_joint(shake_config, acc=5.0, vel=5.0)
+        self.robot.robot.movels(pose_config_list1, acc=a, vel=v, radius=r)
         
         print "Finish pouring..."
         self.robot.disconnect()
@@ -223,9 +260,14 @@ class PickAndPour:
             - pour_angle: rotating angle, e.g. -np.pi/4
         """
         # bottle lower tips in the ee frame
-        ee_offset_x = 0.078 * np.cos(3*np.pi/4)
-        ee_offset_y = 0.078 * np.sin(3*np.pi/4)
-        ee_offset_z = 0.195
+        # ee_offset_x = 0.078 * np.cos(3*np.pi/4)
+        # ee_offset_y = 0.078 * np.sin(3*np.pi/4)
+        # ee_offset_z = 0.195
+
+        # cup lower tips in the ee frame
+        ee_offset_x = self.cup_ee_horizontal_offset * np.cos(3*np.pi/4)
+        ee_offset_y = self.cup_ee_horizontal_offset * np.sin(3*np.pi/4)
+        ee_offset_z = self.cup_ee_vertical_offset
         ee_offset = np.array([ee_offset_x, ee_offset_y, ee_offset_z])
 
         # ee frame in the world frame when bottle is placed horizontal
@@ -255,10 +297,12 @@ class PickAndPour:
 if __name__ == "__main__":
     PP = PickAndPour(0.5, 0.5)
     PP.pick_vertical()
-    pour_pos = [-0.14513142, -0.35582313,  0.14435201]
+    pour_pos = [-0.08505428, -0.30830889,  0.178911]
+    print PP.get_pour_orn(0.0)
 
-    # PP.pour_single_orn(pour_pos)
     PP.pour_multi_orn(pour_pos, bottle_angle=np.pi/4)
+
+    # PP.disconnect()
 
     # pre_pour_angle = -np.pi/20
     # mid_pour_angle = -np.pi/4
