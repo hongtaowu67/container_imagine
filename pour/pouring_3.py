@@ -133,7 +133,7 @@ class CupPour(object):
 
         # cup
         self.cup_urdf = cup_urdf
-        self.pour_angle = 2 * np.pi / 5
+        self.pour_angle = np.pi/4
         self.pour_pos_nominal = pour_pos + np.array(obj_zero_pos) # need to add the position of the object
         self.pour_num = 8 # Number of pouring within [0, 2*pi)
 
@@ -191,7 +191,7 @@ class CupPour(object):
 
             for j in range(self.indent_num):
 
-                # Pour position for different angle. Indent is included for the offset from the nominal pour pos.
+                # Pour position for different angle. Indent is included for x the offset from the nominal pour pos.
                 self.pour_pos = np.zeros(3)
                 self.pour_pos[0] = self.pour_pos_nominal[0] - (indent + j * self.indent_len) * np.cos(planar_angle)
                 self.pour_pos[1] = self.pour_pos_nominal[1] - (indent + j * self.indent_len) * np.sin(planar_angle)
@@ -241,7 +241,7 @@ class CupPour(object):
                         time.sleep(1. / 240.)           
 
                     # Need to compensate for the np.pi/30 in the cup zero orientation
-                    orn = p.getQuaternionFromEuler([0, (0.028575317269292654 + np.pi/3) * math.sin(math.pi * 2 * (i) / int(4 * self.pour_simulation_iteration)), planar_angle])
+                    orn = p.getQuaternionFromEuler([0, (0.028575317269292654 + self.pour_angle) * math.sin(math.pi * 2 * i / int(4 * self.pour_simulation_iteration)), planar_angle])
                     p.changeConstraint(cup_constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
 
                 # Code for shaking the cup (deprecated)
