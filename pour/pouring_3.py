@@ -351,7 +351,6 @@ class CupPour(object):
         min_spill_num = self.content_num
 
         for idx in cup_angle_order:
-            # Spill angle list corresponds to the canonical cup angle np.pi/4
             spill_angle_list = np.array(self.spill_list[idx])
             spill_angle_min_idx = np.argmin(spill_angle_list)
 
