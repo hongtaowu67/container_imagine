@@ -26,7 +26,7 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Origami_Pink_Cup_pour"
+data_name = "Ikea_Bolmen_Toilet_Brush_Holder_pour"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -137,8 +137,13 @@ if pouring:
         PP = PickAndPour(acc=0.5, vel=0.5)
         PP.pick_vertical()
         PP.pour_multi_orn(imagined_pour_pos, bottle_angle=imagined_cup_angle)
+    else:
+        imagined_pour_pos = [np.nan, np.nan, np.nan]
+        imagined_cup_angle = np.nan
     pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time - pouring_imagination_time
 else:
+    imagined_pour_pos = [np.nan, np.nan, np.nan]
+    imagined_cup_angle = np.nan
     pouring_time = np.nan
 ############################################################
 
