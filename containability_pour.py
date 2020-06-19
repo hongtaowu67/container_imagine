@@ -9,13 +9,13 @@ import os
 import time
 import numpy as np
 from containability.containability_3_1 import Containability
-from pour.pouring_2 import BottlePour
+from pour.pouring_3 import CupPour
 
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all"
 # obj_dir = "/home/hongtao/Dropbox/ICRA2021/paper/Figure2"
-result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0408_mm"
-bottle_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/bottle/JuiceBottle_GeoCenter.urdf"
+result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0616_mm_pour"
+bottle_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 obj_list = os.listdir(obj_dir)
 # obj_list=["Blue_Cup"]
 print(obj_list)
@@ -39,9 +39,9 @@ for obj_name in obj_list:
         pour_pos = C.find_drop_center()
         print "Dropping at: {}".format(pour_pos)
         C.disconnect_p()
-        BP = BottlePour(bottle_urdf, content_urdf, obj_urdf, pour_pos, indent_num=3, content_num=60,
+        BP = CupPour(bottle_urdf, content_urdf, obj_urdf, pour_pos, indent_num=3, content_num=60,
                 obj_zero_pos=[0, 0, 1], check_process=False, mp4_dir=None, object_name=obj_name)
-        spill_list = BP.bottle_pour()
+        spill_list = BP.cup_pour()
         BP.disconnect_p()
         print "Spill List: {}".format(spill_list)
     else:
