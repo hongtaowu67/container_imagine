@@ -32,7 +32,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         print "output_dir: ", output_dir
     
     # TODO: if GPU is available, use GPU version of tsdf fusion
-    tsdf_executable = os.path.join(tsdf_fusion_dir, 'tsdf-fusion-cpu-24') # The base frame is at the ArUco tag, 20 frames
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'build/tsdf-fusion-cpu') # The base frame is at the ArUco tag, 20 frames
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
 
