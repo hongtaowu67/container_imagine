@@ -26,7 +26,7 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Ikea_Bolmen_Toilet_Brush_Holder_pour"
+data_name = "Amazon_Name_Card_Holder_pour"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -55,7 +55,7 @@ autocapture_time = time.time() - start_time
 
 
 ######## 3D reconstruct the object with TSDF Fusion #########
-tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
+tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/TSDFfusion')
 
 # TSDF Fusion
 image_folder = os.path.join(data_root_dir, data_name, 'rgbd')
@@ -99,7 +99,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 C.disconnect_p()
@@ -119,7 +119,7 @@ if pouring:
     if containability_affordance:
         print "Start pouring imagination..."
         BP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, indent_num=3, content_num=60,
-                        obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=mp4_dir, object_name=object_name)
+                        obj_zero_pos=[0, 0, 1], check_process=False, mp4_dir=mp4_dir, object_name=object_name)
         spill_list = BP.cup_pour()
         BP.disconnect_p()
         print "Spill List: {}".format(spill_list)
