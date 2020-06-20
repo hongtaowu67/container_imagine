@@ -85,7 +85,7 @@ int main(int argc, char * argv[]) {
 
   int base_frame_idx = 150;
   int first_frame_idx = 150;
-  float num_frames = 18;
+  float num_frames = 24;
 
   float cam_K[3 * 3];
   float base2world[4 * 4];
