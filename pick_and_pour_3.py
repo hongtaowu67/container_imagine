@@ -20,8 +20,6 @@ from robot import Robot
 from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
 from utils import angle2rotm, make_rigid_transformation, rotm2angle
 
-import ikfast.ikfastpy
-
 
 class PickAndPour:
     def __init__ (self, acc, vel):
