@@ -16,6 +16,8 @@ import time
 import math
 import trimesh
 
+from sklearn.decomposition import PCA
+
 def isRotm(R) :
     # Checks if a matrix is a valid rotation matrix.
     # Forked from Andy Zeng
@@ -399,6 +401,24 @@ class CupPour(object):
             cup_angle -= 2*np.pi
         
         return pivot_pos, cup_angle
+
+
+    def get_PCA_orn(self, content_in_list):
+        """
+        Compute the PCA of a list of content dropped in the container.
+
+        Args:
+            - content_in_list (nx3 np array)
+        Returns:
+            - PCA vectors (2x2 np array): SO(2) direction of pouring angle.
+                                          the first vector corresponds to the largest variance
+        """
+        print content_in_list
+        pca = PCA(n_components=2)
+        pca.fit(content_in_list)
+        
+        print "PCA components"
+        print pca.components_
 
 
     def disconnect_p(self):
