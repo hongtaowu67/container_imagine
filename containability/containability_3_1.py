@@ -61,6 +61,7 @@ class Containability(object):
         # Simulation Parameter
         self.simulation_iteration = 1500
         self.check_process = check_process
+        self.rotate_accelerate = True
 
         # Sphere Information
         self.sphere_id = []
@@ -121,8 +122,9 @@ class Containability(object):
 
 
     def load_sphere(self, obj_curr_aabb):
-        """ Load sphere before simulation. 
-            Make sure that pybullet has already been connected before calling this function.             
+        """ 
+        Load sphere before simulation. 
+        Make sure that pybullet has already been connected before calling this function.             
         """
 
         sphere = p.loadURDF(self.sphere_urdf, basePosition=[0, 0, -1])
@@ -200,8 +202,9 @@ class Containability(object):
 
 
     def checkincup(self, obj_curr_aabb):
-        """ Get how many spheres are in the cup and the original position of the sphere
-            Also, the drop pos of the in sphere will be updated to self.sphere_in_drop_pos
+        """ 
+        Get how many spheres are in the cup and the original position of the sphere
+        Also, the drop pos of the in sphere will be updated to self.sphere_in_drop_pos
         """
 
         # Clear the sphere_in_drop_pos memory
@@ -240,6 +243,7 @@ class Containability(object):
         # Pivot for rotating the object
         pivot = self.obj_com_zero
 
+
         for i in range(self.simulation_iteration):
             
             # Figure 3
@@ -261,23 +265,25 @@ class Containability(object):
             #     # Check the number of sphere in the bbox before moving the sphere away
             #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
-            # 2.0: Shake Objects
-            if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
-                orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
-                p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
-            elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
-                orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
-                p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+            # flag for ablation study
+            if self.rotate_accelerate:
+                # 2.0: Shake Objects
+                if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
+                    orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
+                    p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+                elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
+                    orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
+                    p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
 
-            # 3.0: Horizontal Acceleration
-            elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
-                p.setGravity(0.5, 0.0, -9.81)
-            elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
-                p.setGravity(-0.5, 0.0, -9.81)
-            elif i > int(9.5 * self.simulation_iteration / 10) and i <= int(9.75 * self.simulation_iteration / 10):
-                p.setGravity(0.0, 0.5, -9.81)
-            elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
-                p.setGravity(0.0, -0.5, -9.81)
+                # 3.0: Horizontal Acceleration
+                elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
+                    p.setGravity(0.5, 0.0, -9.81)
+                elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
+                    p.setGravity(-0.5, 0.0, -9.81)
+                elif i > int(9.5 * self.simulation_iteration / 10) and i <= int(9.75 * self.simulation_iteration / 10):
+                    p.setGravity(0.0, 0.5, -9.81)
+                elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
+                    p.setGravity(0.0, -0.5, -9.81)
         
         # Figure 3
         # import ipdb; ipdb.set_trace()
