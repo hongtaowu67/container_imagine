@@ -178,7 +178,6 @@ class CupPour(object):
         self.indent_len = self.obj_digonal_len / (3 * self.indent_num) # half the length of the diagonal
         self.canonical_cup_angle = np.pi/4
         self.pivot_pos_list = []
-        self.best_pour_orn_by_sum = True
 
 
     def cup_pour(self, indent=0.01):
@@ -346,79 +345,33 @@ class CupPour(object):
             - pivot_pos: (3, ) numpy array, the pouring position
             - cup_angle: angle for pouring
         """
-        # print "pivot_pos_list"
-        # print self.pivot_pos_list
-        
-        # Pick the best orn and pos by selecting the pouring orn and pos
-        # with minimum spillage among all the pouring orn and pos
-        if not self.best_pour_orn_by_sum:
+        # np.pi/4, 0, -np.pi/4, 3*np.pi/4, -np.pi/2, np.pi, -3*np.pi/4, np.pi/2
+        cup_angle_order = [1, 0, 7, 3, 6, 4, 5, 2]
+        min_spill_num = self.content_num
 
-            # np.pi/4, 0, -np.pi/4, 3*np.pi/4, -np.pi/2, np.pi, -3*np.pi/4, np.pi/2
-            cup_angle_order = [1, 0, 7, 3, 6, 4, 5, 2]
-            min_spill_num = self.content_num
-
-            for idx in cup_angle_order:
-                spill_angle_list = np.array(self.spill_list[idx])
-                spill_angle_min_idx = np.argmin(spill_angle_list)
-
-                # If 0 is in the spill_angle_list, we are done
-                if 0 in spill_angle_list:
-                    pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
-                    cup_angle = idx * np.pi/4
-                    if cup_angle > np.pi:
-                        cup_angle -= 2*np.pi 
-                    return pivot_pos, cup_angle
-
-                # Update the min_spill_num
-                if spill_angle_list[spill_angle_min_idx] < min_spill_num:
-                    min_spill_num = spill_angle_list[spill_angle_min_idx]
-                    pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
-                    cup_angle = idx * np.pi/4
-
-        # Ablation study for pouring experiment
-        # Pick the best orn by selecting the pouring orn with minimum sum.
-        # The pos with the least spillage within the best orn is selected
-        # as the best pouring orn
-        else:
-
-            spill_list = np.array(self.spill_list)
-            spill_sum_list = np.sum(spill_list, axis=1)
-
-            spill_sum_min_idx = np.argmin(spill_sum_list)
-            # If np.pi/4 is also min, then use it as the spill_sum_min_idx
-            if spill_sum_list[spill_sum_min_idx] == spill_sum_list[1]:
-                spill_sum_min_idx = 1
-
-            cup_angle = spill_sum_min_idx * np.pi/4
-            spill_angle_list = np.array(self.spill_list[spill_sum_min_idx])
+        for idx in cup_angle_order:
+            spill_angle_list = np.array(self.spill_list[idx])
             spill_angle_min_idx = np.argmin(spill_angle_list)
-            pivot_pos = self.pivot_pos_list[spill_sum_min_idx][spill_angle_min_idx] - self.obj_zero_pos
 
-            print "Cup Angle: ", cup_angle
-            print "spill_angle_min_idx: ", spill_angle_min_idx
+            # If 0 is in the spill_angle_list, we are done
+            if 0 in spill_angle_list:
+                pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
+                cup_angle = idx * np.pi/4
+                if cup_angle > np.pi:
+                    cup_angle -= 2*np.pi 
+                return pivot_pos, cup_angle
+
+            # Update the min_spill_num
+            if spill_angle_list[spill_angle_min_idx] < min_spill_num:
+                min_spill_num = spill_angle_list[spill_angle_min_idx]
+                pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
+                cup_angle = idx * np.pi/4
+
 
         if cup_angle > np.pi:
             cup_angle -= 2*np.pi
         
         return pivot_pos, cup_angle
-
-
-    def get_PCA_orn(self, content_in_list):
-        """
-        Compute the PCA of a list of content dropped in the container.
-
-        Args:
-            - content_in_list (nx3 np array)
-        Returns:
-            - PCA vectors (2x2 np array): SO(2) direction of pouring angle.
-                                          the first vector corresponds to the largest variance
-        """
-        print content_in_list
-        pca = PCA(n_components=2)
-        pca.fit(content_in_list)
-        
-        print "PCA components"
-        print pca.components_
 
 
     def disconnect_p(self):
