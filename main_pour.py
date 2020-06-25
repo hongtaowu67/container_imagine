@@ -26,7 +26,7 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Amazon_Name_Card_Holder_pour"
+data_name = "Ikea_Fridfull_Plant_Pot_pour"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -99,7 +99,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 C.disconnect_p()
@@ -119,7 +119,7 @@ if pouring:
     if containability_affordance:
         print "Start pouring imagination..."
         BP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, indent_num=3, content_num=60,
-                        obj_zero_pos=[0, 0, 1], check_process=False, mp4_dir=mp4_dir, object_name=object_name)
+                        obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=mp4_dir, object_name=object_name)
         spill_list = BP.cup_pour()
         BP.disconnect_p()
         print "Spill List: {}".format(spill_list)
@@ -127,6 +127,9 @@ if pouring:
         imagined_pour_pos, imagined_cup_angle = BP.best_pour_pos_orn()
     else:
         spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
+else:
+    spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
+
 pouring_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time
 ##############################################################
 
@@ -147,23 +150,42 @@ else:
     pouring_time = np.nan
 ############################################################
 
-
+# Containabililty with pouring
 #################################################################
-result_txt_name = os.path.join(data_folder, data_name + ".txt")
-with open(result_txt_name, "w") as file1:
-    today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-    file1.write("Name: " + data_name + "\n")
-    file1.write("Date: " + today + "\n")
-    file1.write("Containability: " + str(containability_affordance) + "\n")
-    file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
-    file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
-    file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
-    file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
-    file1.write("Spill List: " + str(list(spill_list)) + "\n")
-    file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
-    file1.write("Model processing time: " + str(preprocessing_time) + "\n")
-    file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
-    file1.write("Pouring imagination time: " + str(pouring_imagination_time) + "\n")
-    file1.write("Pouring time: " + str(pouring_time) + "\n")
-    file1.write("Object url: \n")
+if pouring:
+    result_txt_name = os.path.join(data_folder, data_name + ".txt")
+    with open(result_txt_name, "w") as file1:
+        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+        file1.write("Name: " + data_name + "\n")
+        file1.write("Date: " + today + "\n")
+        file1.write("Containability: " + str(containability_affordance) + "\n")
+        file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
+        file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
+        file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
+        file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
+        file1.write("Spill List: " + str(list(spill_list)) + "\n")
+        file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
+        file1.write("Model processing time: " + str(preprocessing_time) + "\n")
+        file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
+        file1.write("Pouring imagination time: " + str(pouring_imagination_time) + "\n")
+        file1.write("Pouring time: " + str(pouring_time) + "\n")
+        file1.write("Object url: \n")
+#################################################################
+
+# Containability Imagination
+#################################################################
+if not pouring:
+    result_txt_name = os.path.join(data_folder, data_name + ".txt")
+    with open(result_txt_name, "w") as file1:
+        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+        file1.write("Name: " + data_name + "\n")
+        file1.write("Date: " + today + "\n")
+        file1.write("Containability: " + str(containability_affordance) + "\n")
+        file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
+        file1.write("Pour position: " + str(list(drop_spot)) + "\n")
+        file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
+        file1.write("Model processing time: " + str(preprocessing_time) + "\n")
+        file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
+        file1.write("Pouring time: " + str(pouring_time) + "\n")
+        file1.write("Object url: \n")
 #################################################################
