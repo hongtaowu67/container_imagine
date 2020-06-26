@@ -337,7 +337,7 @@ class CupPour(object):
         return spill_num
 
 
-    def best_pour_pos_orn(self):
+    def best_pour_pos_orn_old(self):
         """
         Calculate the best pouring position and orientation.
         
@@ -367,6 +367,48 @@ class CupPour(object):
                 pivot_pos = self.pivot_pos_list[idx][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
                 cup_angle = idx * np.pi/4
 
+
+        if cup_angle > np.pi:
+            cup_angle -= 2*np.pi
+        
+        return pivot_pos, cup_angle
+
+    
+    def best_pour_pos_orn(self):
+        """
+        Calculate the best pouring position and orientation.
+        
+        Return:
+            - pivot_pos: (3, ) numpy array, the pouring position
+            - cup_angle: angle for pouring
+        """
+
+        spill_list = np.array(self.spill_list)
+        spill_list_angle_sum = np.sum(spill_list, axis=1)
+        min_spillage_sum_angle = spill_list_angle_sum.min()
+        cup_angle_idx_list = np.where(spill_list_angle_sum == min_spillage_sum_angle)
+
+        min_spill_num = self.content_num
+        min_spill_angle_idx = None
+        min_spill_angle_pos_idx = None
+
+        for cup_angle_idx in cup_angle_idx_list[0]:
+            spill_angle_list = spill_list[cup_angle_idx]
+            spill_angle_pos_min_idx = np.argmin(spill_angle_list)
+
+            if spill_angle_list[spill_angle_pos_min_idx] < min_spill_num:
+                # Pick the one with least spillage
+                min_spill_num = spill_angle_list[spill_angle_pos_min_idx]
+                min_spill_angle_idx = cup_angle_idx
+                min_spill_angle_pos_idx = spill_angle_pos_min_idx
+            elif spill_angle_list[spill_angle_pos_min_idx] == min_spill_num:
+                # Pick the one closest to the center
+                if spill_angle_pos_min_idx < min_spill_angle_pos_idx:
+                    min_spill_angle_idx = cup_angle_idx
+                    min_spill_angle_pos_idx = spill_angle_pos_min_idx
+
+        pivot_pos = self.pivot_pos_list[min_spill_angle_idx][min_spill_angle_pos_idx] - self.obj_zero_pos
+        cup_angle = min_spill_angle_idx * np.pi/4
 
         if cup_angle > np.pi:
             cup_angle -= 2*np.pi
