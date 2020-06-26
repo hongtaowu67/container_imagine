@@ -405,14 +405,12 @@ class CupPour(object):
         min_spillage_sum_angle = spill_list_angle_sum.min()
         cup_angle_idx_list = np.where(spill_list_angle_sum == min_spillage_sum_angle)
 
-        print "cup_angle_idx_list: ", cup_angle_idx_list
-        print "cup_angle_idx_list[0]: ", cup_angle_idx_list[0]
+        # print "cup_angle_idx_list: ", cup_angle_idx_list
+        # print "cup_angle_idx_list[0]: ", cup_angle_idx_list[0]
 
         min_spill_num = self.content_num
         min_spill_angle_idx = None
         min_spill_angle_pos_idx = None
-
-        import ipdb; ipdb.set_trace()        
 
         for cup_angle_idx in cup_angle_idx_list[0]:
             spill_angle_list = spill_list[cup_angle_idx]
@@ -433,45 +431,11 @@ class CupPour(object):
                         min_spill_angle_idx = cup_angle_idx
                         min_spill_angle_pos_idx = spill_angle_pos_min_idx
 
-                    
-        
         print "min_spill_angle_idx: ", min_spill_angle_idx
         print "min_spill_angle_pos_idx: ", min_spill_angle_pos_idx
 
         pivot_pos = self.pivot_pos_list[min_spill_angle_idx][min_spill_angle_pos_idx] - self.obj_zero_pos
         cup_angle = self.content_large_var_angle + min_spill_angle_idx * np.pi/4
-
-        # # There is only one pos and cup angle with minimum spillage
-        # if min_spillage_num == 1:
-            
-        #     pivot_pos = self.pivot_pos_list[cup_angle_idx_list[0]][pos_angle_idx_list[0]] - self.obj_zero_pos
-        # else:
-        #     # Pick the cup angle with the smallest angle to the large principal axis
-        #     min_angle_to_large_var_axis_idx = None # cup angle idx with smallest angle between the large var principal axis
-        #     min_angle_to_large_var_axis_dist = 8 # unit: np.pi/4
-        #     min_angle_to_large_var_axis_pos_idx = 2 # pouring pos idx
-
-        #     for i in range(min_spillage_num):
-        #         cup_angle_idx = cup_angle_idx_list[i]
-        #         angle_to_large_var_axis_dist = min(cup_angle_idx, abs(cup_angle_idx - self.pour_num/2)) # the opposite is of large var axis is also large var axis
-        #         # Favour the pouring close to the center
-        #         if pos_angle_idx_list[i] < min_angle_to_large_var_axis_pos_idx:
-        #             min_angle_to_large_var_axis_dist = angle_to_large_var_axis_dist
-        #             min_angle_to_large_var_axis_idx = cup_angle_idx
-        #             min_angle_to_large_var_axis_pos_idx = pos_angle_idx_list[i]
-        #         # Favour the pouring close to the large var axis
-        #         elif pos_angle_idx_list[i] == min_angle_to_large_var_axis_pos_idx:
-        #             if angle_to_large_var_axis_dist < min_angle_to_large_var_axis_dist:
-        #                 min_angle_to_large_var_axis_dist = angle_to_large_var_axis_dist
-        #                 min_angle_to_large_var_axis_idx = cup_angle_idx
-        #                 min_angle_to_large_var_axis_pos_idx = pos_angle_idx_list[i]
-
-
-        #     print "min_angle_to_large_var_axis_idx: ", min_angle_to_large_var_axis_idx
-        #     print "min_angle_to_large_var_axis_pos_idx: ", min_angle_to_large_var_axis_pos_idx
-
-        #     cup_angle = self.content_large_var_angle + min_angle_to_large_var_axis_idx * np.pi/4
-        #     pivot_pos = self.pivot_pos_list[min_angle_to_large_var_axis_idx][min_angle_to_large_var_axis_pos_idx] - self.obj_zero_pos
                 
         if cup_angle > np.pi:
             cup_angle -= 2*np.pi
