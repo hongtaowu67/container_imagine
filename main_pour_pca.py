@@ -26,7 +26,7 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Amazon_Name_Card_Holder_pour_pca"
+data_name = "Teagas_Ash_Tray_pour"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -46,9 +46,9 @@ cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
 
 ############### Capture views of the object #################
-# AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
-#                     acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
-# AC.collect_data()
+AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
+                    acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
+AC.collect_data()
 
 autocapture_time = time.time() - start_time
 #############################################################
@@ -60,15 +60,15 @@ tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/TSDFfusion')
 # TSDF Fusion
 image_folder = os.path.join(data_root_dir, data_name, 'rgbd')
 camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
-# run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-#     voxel_grid_origin_x=-0.3, voxel_grid_origin_y=-0.55, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
+run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
+    voxel_grid_origin_x=-0.3, voxel_grid_origin_y=-0.55, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
 
 # Segementation
 tsdf_bin_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.bin')
 tsdf_ply_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.ply')
 ply_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_point')
 obj_mesh_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_mesh')
-# segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
+segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
 ##############################################################
 
 
@@ -79,7 +79,7 @@ object_name = data_name + "_mesh_0"
 vhacd_dir = os.path.join(root_dir, 'processing')
 input_file = os.path.join(data_root_dir, data_name, object_name + '.obj') 
 output_file = os.path.join(data_root_dir, data_name, object_name + '_vhacd.obj')
-# run_vhacd(vhacd_dir, input_file, output_file)
+run_vhacd(vhacd_dir, input_file, output_file)
 
 # URDF file
 obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
@@ -99,7 +99,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 sphere_in_list = np.array(C.sphere_in_drop_pos)
@@ -122,7 +122,7 @@ if pouring:
         print "Start pouring imagination..."
         sphere_in_list_se2 = sphere_in_list[:, :2]
         CP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, sphere_in_list_se2, indent_num=3, content_num=60,
-                        obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=None, object_name=object_name)
+                        obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=mp4_dir, object_name=object_name)
         spill_list = CP.cup_pour()
         print "Spill List: {}".format(spill_list)
 
@@ -136,39 +136,39 @@ pouring_imagination_time = time.time() - start_time - autocapture_time - preproc
 ##############################################################
 
 
-# ################## Real Robot Pouring #####################
-# if pouring:
-#     if containability_affordance:
-#         PP = PickAndPour(acc=0.5, vel=0.5)
-#         PP.pick_vertical()
-#         PP.pour_multi_orn(imagined_pour_pos, bottle_angle=imagined_cup_angle)
-#     else:
-#         imagined_pour_pos = [np.nan, np.nan, np.nan]
-#         imagined_cup_angle = np.nan
-#     pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time - pouring_imagination_time
-# else:
-#     imagined_pour_pos = [np.nan, np.nan, np.nan]
-#     imagined_cup_angle = np.nan
-#     pouring_time = np.nan
-# ###########################################################
+################## Real Robot Pouring #####################
+if pouring:
+    if containability_affordance:
+        PP = PickAndPour(acc=0.5, vel=0.5)
+        PP.pick_vertical()
+        PP.pour_multi_orn(imagined_pour_pos, bottle_angle=imagined_cup_angle)
+    else:
+        imagined_pour_pos = [np.nan, np.nan, np.nan]
+        imagined_cup_angle = np.nan
+    pouring_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time - pouring_imagination_time
+else:
+    imagined_pour_pos = [np.nan, np.nan, np.nan]
+    imagined_cup_angle = np.nan
+    pouring_time = np.nan
+###########################################################
 
 
-# ################################################################
-# result_txt_name = os.path.join(data_folder, data_name + ".txt")
-# with open(result_txt_name, "w") as file1:
-#     today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-#     file1.write("Name: " + data_name + "\n")
-#     file1.write("Date: " + today + "\n")
-#     file1.write("Containability: " + str(containability_affordance) + "\n")
-#     file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
-#     file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
-#     file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
-#     file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
-#     file1.write("Spill List: " + str(list(spill_list)) + "\n")
-#     file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
-#     file1.write("Model processing time: " + str(preprocessing_time) + "\n")
-#     file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
-#     file1.write("Pouring imagination time: " + str(pouring_imagination_time) + "\n")
-#     file1.write("Pouring time: " + str(pouring_time) + "\n")
-#     file1.write("Object url: \n")
-# ################################################################
+################################################################
+result_txt_name = os.path.join(data_folder, data_name + ".txt")
+with open(result_txt_name, "w") as file1:
+    today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+    file1.write("Name: " + data_name + "\n")
+    file1.write("Date: " + today + "\n")
+    file1.write("Containability: " + str(containability_affordance) + "\n")
+    file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
+    file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
+    file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
+    file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
+    file1.write("Spill List: " + str(list(spill_list)) + "\n")
+    file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
+    file1.write("Model processing time: " + str(preprocessing_time) + "\n")
+    file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
+    file1.write("Pouring imagination time: " + str(pouring_imagination_time) + "\n")
+    file1.write("Pouring time: " + str(pouring_time) + "\n")
+    file1.write("Object url: \n")
+################################################################
