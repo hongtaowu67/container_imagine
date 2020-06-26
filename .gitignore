@@ -5,3 +5,5 @@
 *.txt
 
 *.pyc
+
+processing/log.txt

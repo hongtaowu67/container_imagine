@@ -18,7 +18,7 @@ import time
 from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
-from reconstruction.utils import segment_aabb, convert_tsdf_to_ply
+from reconstruction.utils import segment_aabb, convert_tsdf_to_ply, segment_aabb_noplaneseg
 
 
 def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, output_dir=None, voxel_grid_origin_x=0.0,
@@ -32,7 +32,7 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
         print "output_dir: ", output_dir
     
     # TODO: if GPU is available, use GPU version of tsdf fusion
-    tsdf_executable = os.path.join(tsdf_fusion_dir, 'tsdf-fusion-cpu-24') # The base frame is at the ArUco tag, 20 frames
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'build/tsdf-fusion-cpu') # The base frame is at the ArUco tag, 20 frames
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
 
@@ -41,8 +41,8 @@ def run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
     # Assume the object is no bigger than 0.2m x 0.2m
     if fast_tsdf_settings:
         voxel_size = 0.004
-        voxel_grid_dim_x = 80
-        voxel_grid_dim_y = 80
+        voxel_grid_dim_x = 120
+        voxel_grid_dim_y = 100
         voxel_grid_dim_z = 80
         
     
@@ -116,7 +116,7 @@ def segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_
         convert_tsdf_to_ply(tsdf_bin_file, tsdf_mesh_file)
 
     # Segment the mesh points
-    objects_aabb = segment_aabb(mesh_points, ply_output_prefix)
+    objects_aabb = segment_aabb_noplaneseg(mesh_points, ply_output_prefix)
     
     for obj_id, obj_aabb in enumerate(objects_aabb):
         min_x_in_voxel = max(int((obj_aabb[0][0] - voxelGridOrigin[0]) / voxelSize) - 3, 0)
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     root_dir = os.getcwd()
     tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/tsdf-fusion')
 
-    model_name = "HarmonicBook_24view"
+    model_name = "GripperTest_24view"
 
     data_root_folder = "/home/hongtao/Dropbox/ICRA2021/data"
     model_output_dir = os.path.join(data_root_folder, model_name)
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
     
     run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
-        voxel_grid_origin_x=-0.2, voxel_grid_origin_y=-0.5, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
+        voxel_grid_origin_x=-0.3, voxel_grid_origin_y=-0.55, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
 
     tsdf_bin_file = os.path.join(data_root_folder, model_name, 'rgbd/tsdf.bin')
     # tsdf_mesh_file = os.path.join(model_output_dir, object_name, object_name + '_total.ply')

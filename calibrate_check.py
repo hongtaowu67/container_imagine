@@ -1,5 +1,12 @@
 #! /usr/bin/env python
 
+"""
+Calibration with a checkerboard.
+Use capture_pose_rgb_pose ROS package to capture the pose of the checkerboard
+checkerboard_ros ROS package: https://github.com/hongtaowu67/checkerboard_ros
+rosrun checkerboard_ros capture_checkerboard in the terminal before running the calibrate_check
+"""
+
 
 import numpy as np
 import rospy
@@ -9,7 +16,7 @@ import os
 
 from robot import Robot
 from utils import make_rigid_transformation, quat2rotm, pose_inv, get_mat_log
-from calibrate.aruco import ArUco
+from calibrate.checkerboard import Checkerboard
 
 
 def quat2rotm(quat):
@@ -37,18 +44,18 @@ def quat2rotm(quat):
     return rotm
 
 
-class Calibrate:
+class CalibrateCheckerboard:
 
-    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=21):
+    def __init__(self, tcp_host_ip='172.22.22.2',save_dir=None, workspace_limits=None, calib_point_num=20):
         print "Make sure to roslaunch openni2_launch openni2.launch before running this code!"
-        print "Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>"
+        print "Make sure to rosrun checkerboard_ros capture_checkerboard"
         
         self.tcp_host_ip = tcp_host_ip
         self.workspace_limits = workspace_limits
         self.save_dir = save_dir
 
         self.robot = None
-        self.aruco = None
+        self.checker = None
 
         self.markerIncam_pos = None
         self.markerIncam_orn = None
@@ -79,12 +86,12 @@ class Calibrate:
             (0.21782, -0.21388, 0.76401, 2.3485870176455736, -1.615752047097202, 1.0160215961598813),
             (0.03921, -0.29656, 0.79423, 1.2180241325292287, -2.0715233693557717, 0.88950199612736058),
             (-0.20431, -0.55478, 0.59035, 0.68424240279077064, -2.8901015824157592, 0.90132747050124484),
-            (0.43481, -0.51220, 0.40272, 1.4528613310113572, -1.7610822120576275, 0.43000358571424696),
+            #(0.43481, -0.51220, 0.40272, 1.4528613310113572, -1.7610822120576275, 0.43000358571424696),
             (0.08307, -0.24159, 0.50617, 1.0228050528025394, -2.0190463059023176, 1.46064680982313)
         ]
 
         self.robot_poses = []
-        self.marker_poses = []
+        self.checkerboard_poses = []
 
         self.cam2ee = None
 
@@ -92,7 +99,7 @@ class Calibrate:
     def get_marker_2_cam(self):
         time.sleep(0.5)
 
-        markerIncam_pos, markerIncam_quat, aruco_img = self.aruco.get_pose()
+        markerIncam_pos, markerIncam_quat, checkerboard_img = self.checkerboard.get_pose()
 
         # If the difference between the previous marker pos and the current is large
         # Consider it got a new detection of tag
@@ -103,14 +110,14 @@ class Calibrate:
         else:
             self.markerIncam_mat = None
 
-        return self.markerIncam_mat, aruco_img
+        return self.markerIncam_mat, checkerboard_img
 
     
-    def save_transforms_to_file(self, calib_pt_idx, tool_transformation, marker_transformation, aruco_img):
+    def save_transforms_to_file(self, calib_pt_idx, tool_transformation, marker_transformation, checkerboard_img):
         
         robot_pose_file = os.path.join(self.save_dir, str(calib_pt_idx)  + '_robotpose.txt')
-        marker_pose_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_markerpose.txt')
-        aruco_img_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_img.png')
+        checkerboard_pose_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_markerpose.txt')
+        checkerboard_img_file = os.path.join(self.save_dir, str(calib_pt_idx) + '_img.png')
         
         # Tool pose in robot base frame
         with open(robot_pose_file, 'w') as file1:
@@ -118,11 +125,11 @@ class Calibrate:
                 file1.writelines(str(l) + ' ')
 
         # Marker pose in camera frame
-        with open(marker_pose_file, 'w') as file2:
+        with open(checkerboard_pose_file, 'w') as file2:
             for l in np.reshape(marker_transformation, (16, )).tolist():
                 file2.writelines(str(l) + ' ')
         
-        cv2.imwrite(aruco_img_file, aruco_img)
+        cv2.imwrite(checkerboard_img_file, checkerboard_img)
 
 
     def collect_data(self):
@@ -131,12 +138,11 @@ class Calibrate:
         # Initialize the robot
         self.robot = Robot(self.workspace_limits, self.tcp_host_ip)
         
-        # Initialize the aruco
-        self.aruco = ArUco()
-        rospy.init_node('aruco', anonymous=True)
+        # Initialize the checkerboard
+        self.checkerboard = Checkerboard()
+        rospy.init_node('calibrate_check', anonymous=False)
         time.sleep(0.5)
         
-        epsilon = 0.05 # randomness for sampling orientation
         complete_point_num = 0
         
         while complete_point_num < self.calib_point_num:
@@ -146,25 +152,25 @@ class Calibrate:
             
             # Move the robot
             robot_transform = self.robot.move_to(pos, orn)
-            time.sleep(1)
+            time.sleep(2)
 
             # Marker Pose
-            marker_pose, aruco_img = self.get_marker_2_cam()
+            checkerboard_pose, checkerboard_img = self.get_marker_2_cam()
 
-            if marker_pose is not None:
+            if checkerboard_pose is not None:
                 # Robot Pose
                 rotm = robot_transform.orient.array
                 pos = robot_transform.pos.array
                 robot_pose = make_rigid_transformation(pos, rotm)
 
-                print("Get the marker in frame!")
+                print("Get the checkerboard in frame!")
                 print(self.calib_point[complete_point_num])
                 # print("Robot Pose")
                 # print(robot_pose)
                 # print("Marker Pose")
-                # print(marker_pose)
+                # print(checkerboard_pose)
                 print("#################")
-                self.save_transforms_to_file(complete_point_num, robot_pose, marker_pose, aruco_img)
+                self.save_transforms_to_file(complete_point_num, robot_pose, checkerboard_pose, checkerboard_img)
 
                 complete_point_num += 1
             
@@ -177,13 +183,13 @@ class Calibrate:
         load_dir: the directory where calibration data was previously acquired from the robot.
         # Returns
         Two lists of 4x4 transformation matrices.
-        self.robot_poses, self.marker_poses
+        self.robot_poses, self.checkerboard_poses
         """
 
         for f in os.listdir(load_dir):
             if 'robotpose.txt' in f:
                 robot_pose_file = f
-                marker_pose_file = f[:-13] + 'markerpose.txt'
+                checkerboard_pose_file = f[:-13] + 'markerpose.txt'
 
                 # tool pose in robot base frame
                 with open(os.path.join(load_dir, robot_pose_file), 'r') as file_robot:
@@ -194,12 +200,12 @@ class Calibrate:
                 self.robot_poses.append(robotpose)
 
                 # marker pose in camera frame
-                with open(os.path.join(load_dir, marker_pose_file), 'r') as file_marker:
+                with open(os.path.join(load_dir, checkerboard_pose_file), 'r') as file_marker:
                     markerpose_str = file_marker.readline().split(' ')
                     markerpose = [float(x) for x in markerpose_str if x is not '']
                     assert len(markerpose) == 16
                     markerpose = np.reshape(np.array(markerpose), (4, 4))
-                self.marker_poses.append(markerpose)
+                self.checkerboard_poses.append(markerpose)
     
 
     def axxb(self):
@@ -270,7 +276,7 @@ class Calibrate:
         """
         n = len(self.robot_poses)
         for i in range(n):
-            base2tag = np.matmul(np.matmul(self.robot_poses[i], self.cam2ee), self.marker_poses[i])
+            base2tag = np.matmul(np.matmul(self.robot_poses[i], self.cam2ee), self.checkerboard_poses[i])
             print("base2tag #{}".format(i))
             print(base2tag)
 
@@ -287,13 +293,15 @@ class Calibrate:
             for l in np.reshape(self.cam2ee, (16, )).tolist():
                 file1.writelines(str(l) + ' ')
 
+        self.robot.disconnect()
+
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_1231_1"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/calib_check_0603"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-    C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
+    C = CalibrateCheckerboard(workspace_limits=workspace_limits, save_dir=save_dir)
     C.collect_data()
     C.calibrate()
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Automatically capture frames to reconstruct the object.
+Automatically capture frames to reconstruct the object. The gripper is mounted on the robot.
+@author: Hongtao Wu
+Jan 13, 2020
 """
 
 import os
@@ -14,8 +16,7 @@ from robot import Robot
 from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
 
 
-
-class AutoCaptureTSDFFusion:
+class AutoCapture:
     def __init__ (self, data_folder, acc, vel, cam2ee_file, automatic=True, time_interval=None):
         self.automatic = automatic
         if not self.automatic:
@@ -28,7 +29,11 @@ class AutoCaptureTSDFFusion:
         self.acc = acc
         self.vel = vel
 
-        self.robot = Robot(acc=self.acc, vel=self.vel)
+        self.robot = Robot(acc=self.acc, vel=self.vel, gripper_on=False)
+
+        # Feb 12, 2020
+        # For recording the data
+        time.sleep(5)
 
         # camera in ee frame
         with open(os.path.join(cam2ee_file), 'r') as file_robot:
@@ -62,7 +67,7 @@ class AutoCaptureTSDFFusion:
             (3.273634672164917, -3.1482985655414026, 0.3076972961425781, -0.8725264708148401, -2.063065830861227, -0.9009659926043909),
             (2.869597911834717, -2.959958855305807, 0.3995485305786133, -0.8721903006183069, -1.982847038899557, -0.900977913533346),
             (3.44594407081604, -2.7235000769244593, 0.32242679595947266, -0.8720467726336878, -2.076796833668844, -0.9009659926043909),
-            (3.6073365211486816, -2.4106081167804163, 0.3210010528564453, -0.8791068235980433, -2.5716334025012415, -0.8077147642718714),
+            (3.5350141525268555, -2.4529956022845667, 0.32257509231567383, -0.8774879614459437, -2.1872618834124964, -0.8489778677569788),
 
             # Front to back
             # (1.3270788192749023, -0.5871318022357386, 0.5635156631469727, -0.9754813353167933, -1.7128685156451624, -0.9983609358416956),
@@ -82,6 +87,13 @@ class AutoCaptureTSDFFusion:
             # (1.8424330949783325, -3.136968437825338, 0.39767932891845703, -0.7822216192828577, -1.9841278235064905, -0.9009059111224573),
             # (3.2762231826782227, -3.1569674650775355, 0.39711570739746094, -0.7731722036944788, -2.1216662565814417, -0.9009421507464808)         
             
+        ]
+
+        self.pick_bottle_joints = [
+            # Low
+            (2.006856679916382, -1.3167336622821253, 1.6932334899902344, -1.9662039915667933, -1.5629408995257776, -1.0797608534442347),
+            # High
+            (2.007300853729248, -1.3760116736041468, 1.5031867027282715, -1.7167752424823206, -1.5620291868792933, -1.0819900671588343)
         ]
 
         
@@ -129,21 +141,21 @@ class AutoCaptureTSDFFusion:
             self.save_frame(idx)
 
         self.robot.go_home()
-
         self.robot.disconnect()
+        
 
 
-# Test
-if __name__ == "__main__":
-    root_folder = os.getcwd()
+# # Test
+# if __name__ == "__main__":
+#     root_folder = os.getcwd()
     
-    data_name = "FramkallaMugPink_24view"
+#     data_name = "GripperTest_24view"
 
-    data_folder = os.path.join("/home/hongtao/Dropbox/ICRA2021/data", data_name)
-    if not os.path.exists(data_folder):
-        os.mkdir(data_folder)
-        os.mkdir(os.path.join(data_folder, 'rgbd'))
-    cam2ee_file = os.path.join(root_folder, "calibrate/camera_pose.txt")
-    ACT = AutoCaptureTSDFFusion(data_folder=os.path.join(data_folder, 'rgbd'), 
-                                acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
-    ACT.collect_data()
+#     data_folder = os.path.join("/home/hongtao/Dropbox/ICRA2021/data", data_name)
+#     if not os.path.exists(data_folder):
+#         os.mkdir(data_folder)
+#         os.mkdir(os.path.join(data_folder, 'rgbd'))
+#     cam2ee_file = os.path.join(root_folder, "calibrate/camera_pose.txt")
+#     ACT = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
+#                                 acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
+#     ACT.collect_data()

@@ -2,6 +2,12 @@
 This repository is for the imagination of cup with real robots.
 
 # Installation
+The project has been tested on python 2.7.
+
+Pybullet
+
+[TSDF Fusion](https://github.com/andyzeng/tsdf-fusion): Need to compile this code.
+
 
 # Module
 ## Camera Calibration
@@ -28,3 +34,30 @@ roslaunch aruco_ros single.launch markerId:=<marker ID> markerSize:=<marker size
 rosrun image_view image_view image:=/aruco_single/result
 ```
 
+### Real Robot Experiment
+TODO: Calibration (can test the chessboard calibration method)
+
+The real robot experiment use *containability_3_1.py* to imagine the containability (**not tested yet**). To run the real robot experiment, run
+```shell
+python main.py
+```
+Specify the data directory (directory to save the data), the content urdf and the data name in *main.py*. A directory with the object name will be created in the data directory. The RGB images, depth images, scanned 3D model file (obj), object urdf file, open containability imagination visualization (mp4), and the containability imagination results (txt) will be saved in this directory. 
+
+### Containability Imagination Benchmark
+The objects are saved in `test_set_all/` which contains 99 objects at the moment. To run the containability imagination benchmark, run
+```shell
+python containability_imagination.py
+```
+Set the content urdf, object directory, and result directory in *containability_imagination.py*. The imagination result (txt) for each objects will be saved in the result directory.
+
+If you want to enable the pouring imagination, then run
+```shell
+python containability_pour.py
+```
+Set the content urdf, object directory, result directory, and the bottle urdf in *containability_pour.py*. The imagination result (txt) for each objects will be saved in the result directory.
+
+To benchmark the result with human annotation, run
+```shell
+python benchmark_human.py
+```
+Specify the data directory of the imagination result txt, annotation data directory, and the corresponding annotation files in *benchmark_human.py*. The imagination result (containability and/or pouring) will be displayed.
