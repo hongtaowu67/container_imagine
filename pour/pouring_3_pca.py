@@ -314,6 +314,8 @@ class CupPour(object):
         
         pivot = pour_pos
 
+        # import ipdb; ipdb.set_trace()
+
         for i in range(self.pour_simulation_iteration):
             p.stepSimulation()
 
@@ -410,15 +412,28 @@ class CupPour(object):
         min_spill_angle_idx = None
         min_spill_angle_pos_idx = None
 
+        import ipdb; ipdb.set_trace()        
+
         for cup_angle_idx in cup_angle_idx_list[0]:
-            spill_angle_list = spill_list[cup_angle_idx, :]
-            print spill_angle_list
+            spill_angle_list = spill_list[cup_angle_idx]
             spill_angle_pos_min_idx = np.argmin(spill_angle_list)
 
             if spill_angle_list[spill_angle_pos_min_idx] < min_spill_num:
                 min_spill_num = spill_angle_list[spill_angle_pos_min_idx]
                 min_spill_angle_idx = cup_angle_idx
                 min_spill_angle_pos_idx = spill_angle_pos_min_idx
+            elif spill_angle_list[spill_angle_pos_min_idx] == min_spill_num:
+                # Pick the one closest to the center
+                if spill_angle_pos_min_idx < min_spill_angle_pos_idx:
+                    min_spill_angle_idx = cup_angle_idx
+                    min_spill_angle_pos_idx = spill_angle_pos_min_idx
+                elif spill_angle_pos_min_idx == min_spill_angle_pos_idx:
+                    # Pick the one closest to the principal axis
+                    if min(cup_angle_idx, abs(cup_angle_idx - self.pour_num/2)) < min(min_spill_angle_idx, abs(min_spill_angle_idx - self.pour_num/2)):
+                        min_spill_angle_idx = cup_angle_idx
+                        min_spill_angle_pos_idx = spill_angle_pos_min_idx
+
+                    
         
         print "min_spill_angle_idx: ", min_spill_angle_idx
         print "min_spill_angle_pos_idx: ", min_spill_angle_pos_idx
