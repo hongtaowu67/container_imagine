@@ -117,7 +117,7 @@ class CupPour(object):
         super(CupPour, self).__init__()
         
         if check_process:
-            self.pysical_client = p.connect(p.GUI)
+            self.physical_client = p.connect(p.GUI)
         else:
             self.physical_client = p.connect(p.DIRECT)
 
