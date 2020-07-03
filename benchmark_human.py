@@ -16,8 +16,8 @@ import ast
 import numpy as np
 
 test_classification = True
-check_spill = True
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0616_mm_pour"
+check_spill = False
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0625_contain_ablation"
 txt_containability_idx = 3
 txt_spill_idx = 6
 
@@ -138,7 +138,7 @@ if test_classification:
         correct_db += (obj_dict[obj_name][3] == is_container)
 
         if (obj_dict[obj_name][1] != is_container):
-            print "Containability Incorrect: " + obj_name + " " + str(obj_dict[obj_name][0])
+            print "Containability Incorrect: " + obj_name + " " + str(obj_dict[obj_name][1])
 
         if check_spill:
             gt_obj_is_container_mm = obj_dict[obj_name][1]

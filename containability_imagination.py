@@ -12,7 +12,7 @@ from containability.containability_3_1 import Containability
 
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all"
-result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0422_mm"
+result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0625_contain_ablation"
 obj_list = os.listdir(obj_dir)
 # obj_list=["Dunkin_Paper_Cup"]
 print(obj_list)
