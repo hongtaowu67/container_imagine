@@ -26,8 +26,8 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Gravy_Boat_pour_no_pca"
-pouring = True
+data_name = "Ikea_Rort_Fork"
+pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
 
