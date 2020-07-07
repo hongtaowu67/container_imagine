@@ -5,56 +5,51 @@ Benchmarking for Open Containability Imagination.
 Author: Hongtao Wu
 July 02, 2020
 """
+
 from __future__ import division
 import trimesh
 import os
-from pymeshfix._meshfix import PyTMesh
+
+def write_result(benchmark_dir, obj_name, convexity):
+    concavity = 1 - convexity
+    benchmark_result_path = os.path.join(benchmark_dir, obj_name + ".txt")
+    
+    with open(benchmark_result_path, 'w') as txt_file:
+        writerow = 'container ' + str(concavity) + ' 0 1 2 3'
+        txt_file.write(writerow)
 
 
-def convexity(obj_path):
+def compute_convexity(obj_path):
 
     mesh = trimesh.load(obj_path)
     watertight = mesh.is_watertight
-    # print "Watertight: ", watertight
-
-    if not watertight:
-        print obj_path
-        print "Not watertight!"
-
-        # watertight_filename = obj_path.split(".")[0] + "_wt.ply"
-        # print watertight_filename
-        # mfix = PyTMesh()
-        # mfix.load_file(obj_path)
-        # mfix.fill_small_boundaries(nbe=40, refine=True)
-        # mfix.clean(max_iters=10, inner_loops=3)
-        # mfix.save_file(watertight_filename)
-        
-        # repaired_mesh = trimesh.load(watertight_filename)
-        # reparied_watertight = repaired_mesh.is_watertight
-        # print "Repaired watertight: ", reparied_watertight
-
     
-    # volume = mesh.volume
-    # ch_volume = mesh.convex_hull.volume
+    # If the mesh is not watertight, the volume is garbage
+    assert watertight == True 
 
-    # print "Volume: ", volume
-    # print "CH Volume: ", ch_volume
+    volume = mesh.volume
+    ch_volume = mesh.convex_hull.volume
 
-    # convexity = volume / ch_volume
+    convexity = volume / ch_volume
 
-    # print "======="
+    return convexity
 
 
 if __name__ == "__main__":
     data_folder  = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all"
+    benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_geometry_0703"
     obj_name_list  = os.listdir(data_folder)
-    # obj_name_list = ["Amazon_Hammer"]
+    print "Object number: ", len(obj_name_list)
+    
     for obj_name in obj_name_list:
         mesh_name = obj_name + "_mesh_0.obj"
-        # mesh_vhacd_name = obj_name + "_mesh_0_vhacd.obj"
-        obj_path = os.path.join(data_folder, obj_name, mesh_name)
-        # obj_vhacd_path = os.path.join(data_folder, obj_name, mesh_vhacd_name)
+        mesh_path = os.path.join(data_folder, obj_name, mesh_name)
 
-        convexity(obj_path)
+        convexity = compute_convexity(mesh_path)
+        write_result(benchmark_dir, obj_name, convexity)
+
+        print obj_name
+        print convexity
+        print "======="
 
 

@@ -29,7 +29,7 @@ import trimesh
 sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 
 class Containability(object):
-    def __init__(self, obj_urdf, obj_vhacd_mesh, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
+    def __init__(self, obj_urdf, obj_vhacd_mesh, rotate=True, translate=True, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
                  check_process=False, mp4_dir=None, object_name=None,
                  content_urdf=sphere_urdf):
         """
@@ -61,7 +61,8 @@ class Containability(object):
         # Simulation Parameter
         self.simulation_iteration = 1500
         self.check_process = check_process
-        self.rotate_accelerate = True
+        self.rotate = rotate
+        self.translate = translate
 
         # Sphere Information
         self.sphere_id = []
@@ -266,7 +267,7 @@ class Containability(object):
             #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
             # flag for ablation study
-            if self.rotate_accelerate:
+            if self.rotate:
                 # 2.0: Shake Objects
                 if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
                     orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
@@ -274,9 +275,11 @@ class Containability(object):
                 elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
                     orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
                     p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
-
+            
+            # flag for ablation study
+            if self.translate:
                 # 3.0: Horizontal Acceleration
-                elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
+                if i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
                     p.setGravity(0.5, 0.0, -9.81)
                 elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
                     p.setGravity(-0.5, 0.0, -9.81)
