@@ -7,3 +7,5 @@
 *.pyc
 
 processing/log.txt
+
+reconstruction/TSDFfusion/build
