@@ -24,12 +24,12 @@ import numpy as np
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
 from containability.containability_3_1 import Containability
-# from paper.figure5 import CupPour
+from pour.pouring_3_pca import CupPour
 # from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Sony_Headphone"
+data_name = "TapeKing_Tape"
 pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -71,7 +71,7 @@ tsdf_bin_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.bin')
 tsdf_ply_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.ply')
 ply_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_point')
 obj_mesh_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_mesh')
-segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
+# segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
 ##############################################################
 
 
@@ -82,13 +82,13 @@ object_name = data_name + "_mesh_0"
 vhacd_dir = os.path.join(root_dir, 'processing')
 input_file = os.path.join(data_root_dir, data_name, object_name + '.obj') 
 output_file = os.path.join(data_root_dir, data_name, object_name + '_vhacd.obj')
-run_vhacd(vhacd_dir, input_file, output_file)
+# run_vhacd(vhacd_dir, input_file, output_file)
 
 # URDF file
 obj_urdf = os.path.join(data_root_dir, data_name, object_name + '.urdf')
 obj_original_file = object_name + '.obj'
 obj_vhacd_file = object_name + '_vhacd.obj'
-write_urdf(obj_urdf, obj_original_file, obj_vhacd_file)
+# write_urdf(obj_urdf, obj_original_file, obj_vhacd_file)
 
 preprocessing_time = time.time() - start_time - autocapture_time
 ##############################################################
@@ -102,7 +102,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+        check_process=True, mp4_dir=None, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 sphere_in_list = np.array(C.sphere_in_drop_pos)
