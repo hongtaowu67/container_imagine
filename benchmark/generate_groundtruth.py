@@ -12,7 +12,7 @@ import os
 test_classification = True
 check_spill = False
 
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt_0703"
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt_0708"
 annotation_dir = "/home/hongtao/Dropbox/ICRA2021/annotation"
 annotation = ["0312", "0321", "0409", "0417"]
 annotation_all_file = "annotation_all.csv"
