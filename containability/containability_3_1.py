@@ -263,6 +263,9 @@ class Containability(object):
         # Load sphere
         self.load_sphere(self.obj_curr_aabb)
 
+        # Figure 2
+        # import ipdb; ipdb.set_trace()
+
         ########################### Drop Sphere Into ############################
         force = 1
 
