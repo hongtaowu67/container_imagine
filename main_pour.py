@@ -26,7 +26,7 @@ from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Ryobi_drill"
+data_name = "Galax_drill"
 pouring = False
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
