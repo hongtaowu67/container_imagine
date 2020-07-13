@@ -13,7 +13,7 @@ from containability.containability_3_1 import Containability
 map_benchmark = True
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/test_set_all"
-result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_imgn_wo_rotation_translation_0708"
+result_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_imgn_w_everything_0710"
 obj_list = os.listdir(obj_dir)
 # obj_list=["Amazon_Name_Card_Holder"]
 
@@ -23,8 +23,8 @@ for obj_name in obj_list:
     start_time = time.time()
     obj_urdf = os.path.join(obj_dir, obj_name, obj_name + "_mesh_0.urdf")
     obj_vhacd_mesh = os.path.join(obj_dir, obj_name, obj_name + "_mesh_0_vhacd.obj")
-    C = Containability(obj_urdf, obj_vhacd_mesh, rotate=False, translate=False, friction=True, restitution=True,
-        obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], check_process=False, mp4_dir=None, object_name=obj_name, content_urdf=content_urdf)
+    C = Containability(obj_urdf, obj_vhacd_mesh, rotate=True, translate=True, friction=True, restitution=True,
+        obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], check_process=False, mp4_dir=None, object_name=obj_name, content_urdf=content_urdf)
 
     containability_affordance, sphere_in_percentage = C.get_containability()
     

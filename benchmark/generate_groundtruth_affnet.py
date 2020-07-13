@@ -13,7 +13,7 @@ July 5, 2020
 import os
 
 map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/gt_map"
-data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_result"
+data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_crop"
 class_folders = os.listdir(data_dir)
 
 for class_name in class_folders:

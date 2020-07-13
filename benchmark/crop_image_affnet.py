@@ -16,8 +16,8 @@ total_img_num = 24
 class_list = ["spatula"]
 
 for class_name in class_list:
-    # obj_list = ["Ikea_Morgonte_Blue_Bowl", "Origami_Bowl"]
-    obj_list = os.listdir(os.path.join(data_folder, class_name))
+    obj_list = ["Rubbermaid_spatula"]
+    # obj_list = os.listdir(os.path.join(data_folder, class_name))
     
     for obj_name in obj_list:
         
