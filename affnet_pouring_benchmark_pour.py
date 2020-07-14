@@ -8,12 +8,13 @@ July 07, 2020
 
 import os
 import numpy as np 
+import time
 
 from pick_and_pour_3 import PickAndPour
 
 
 data_folder = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_pouring"
-obj_name = "Ikea_Fargrik_Bowl"
+obj_name = "Roro_bowl"
 pour_point_txt = obj_name + "_affnet_pour_point.txt"
 
 with open(os.path.join(data_folder, obj_name, pour_point_txt), "r") as f:
@@ -23,10 +24,11 @@ with open(os.path.join(data_folder, obj_name, pour_point_txt), "r") as f:
     for i in range(3):
         p3D[i] = float(items[i])
 
-z_offset = 0.1
+z_offset = 0.05
 p3D[-1] += z_offset
 print p3D
 
 PP = PickAndPour(acc=0.5, vel=0.5)
+time.sleep(2)
 PP.pick_vertical()
 PP.pour_multi_orn(p3D, bottle_angle=np.pi/4)
