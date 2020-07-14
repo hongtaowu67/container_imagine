@@ -13,10 +13,10 @@ output_folder = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmar
 data_folder = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_object"
 total_img_num = 24
 
-class_list = ["spatula"]
+class_list = ["pan"]
 
 for class_name in class_list:
-    obj_list = ["Rubbermaid_spatula"]
+    obj_list = ["TeChef_Egg_pan"]
     # obj_list = os.listdir(os.path.join(data_folder, class_name))
     
     for obj_name in obj_list:
