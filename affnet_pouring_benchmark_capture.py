@@ -108,6 +108,10 @@ class AffNetPourCapture:
                     
                     f.close()
         
+        running_txt_filename = self.obj_name + "_affnet_pour_running.txt"
+        f1 = open(os.path.join(self.data_folder, self.obj_name, running_txt_filename), 'w')
+        f1.close()
+        
         self.robot.go_home()
         self.robot.disconnect()
 
@@ -115,7 +119,7 @@ if __name__ == "__main__":
     root_dir = os.getcwd()
     cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
-    obj_name = "Roro_bowl"
+    obj_name = "Ikea_Fargrik_Bowl"
     data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_pouring"
 
     obj_dir = os.path.join(data_dir, obj_name)
