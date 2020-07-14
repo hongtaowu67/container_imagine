@@ -299,7 +299,7 @@ class Calibrate:
 
 if __name__ == "__main__":
     workspace_limits = [[0.3, -0.3], [-0.4, -0.6], [0.3, 0.5]]
-    save_dir = "/home/hongtao/src/cup_imagine/calibrate/0713_calib"
+    save_dir = "/home/hongtao/src/cup_imagine/calibrate/0714_calib"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     C = Calibrate(workspace_limits=workspace_limits, save_dir=save_dir)
