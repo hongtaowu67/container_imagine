@@ -14,7 +14,7 @@ from pick_and_pour_3 import PickAndPour
 
 
 data_folder = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_pouring"
-obj_name = "Roro_bowl"
+obj_name = "Ikea_Fargrik_Bowl"
 pour_point_txt = obj_name + "_affnet_pour_point.txt"
 
 with open(os.path.join(data_folder, obj_name, pour_point_txt), "r") as f:
@@ -24,7 +24,7 @@ with open(os.path.join(data_folder, obj_name, pour_point_txt), "r") as f:
     for i in range(3):
         p3D[i] = float(items[i])
 
-z_offset = 0.05
+z_offset = 0.10
 p3D[-1] += z_offset
 print p3D
 
