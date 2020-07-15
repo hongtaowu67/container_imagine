@@ -115,6 +115,78 @@ class AffNetPourCapture:
         self.robot.go_home()
         self.robot.disconnect()
 
+
+    def save_frame_3DScanning(self, idx):
+        print ('Start capturing the frames...')
+
+        rgb_file_name = 'frame-{:06d}.color.png'.format(idx+150)
+        depth_file_name = 'frame-{:06d}.depth.png'.format(idx+150)
+        pose_file_name = 'frame-{:06d}.pose.txt'.format(idx+150)
+
+        if not self.automatic:
+            rgb_img, depth_img, camera_pose = self.cam.get_frame()
+        else:
+            rgb_img, depth_img, _ = self.cam.get_frame()
+            robot_pose = self.robot.get_pose()
+            camera_pose = np.matmul(robot_pose, self.cam2ee)
+
+        save_success = False
+
+        if rgb_img is not None:
+            # Save rgb image
+            cv2.imwrite(os.path.join(self.data_folder, rgb_file_name), rgb_img)
+            # Save depth image
+            cv2.imwrite(os.path.join(self.data_folder, depth_file_name), depth_img)
+
+            # Save pose txt file
+            f = open(os.path.join(self.data_folder, pose_file_name), 'w')
+            for line in camera_pose:
+                writeLine = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + '\n'
+                f.write(writeLine)
+            
+            f.close()
+
+            print('Finish number {} frame!'.format(idx))
+            save_success = True
+
+        if idx == 6:
+            rgb_filename = self.obj_name + "_affnet_pour_rgb.png"
+            depth_filename = self.obj_name + "_affnet_pour_depth.png"
+            pose_filename = self.obj_name + "_affnet_pour_pose.txt"
+            rgb_img, depth_img, _ = self.cam.get_frame()
+            robot_pose = self.robot.get_pose()
+            camera_pose = np.matmul(robot_pose, self.cam2ee)
+
+            if rgb_img is not None:
+                # Save rgb image
+                cv2.imwrite(os.path.join(self.data_folder, self.obj_name, rgb_filename), rgb_img)
+                # Save depth image
+                cv2.imwrite(os.path.join(self.data_folder, self.obj_name, depth_filename), depth_img)
+
+                # Save pose txt file
+                f = open(os.path.join(self.data_folder, self.obj_name, pose_filename), 'w')
+                for line in camera_pose:
+                    writeLine = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + '\n'
+                    f.write(writeLine)
+                
+                f.close()
+    
+            running_txt_filename = self.obj_name + "_affnet_pour_running.txt"
+            f1 = open(os.path.join(self.data_folder, self.obj_name, running_txt_filename), 'w')
+            f1.close()
+        
+    def collect_data_3DScanning(self):
+        """
+        Collect data for AffordanceNet-3DScanning.
+        """
+        for idx, rob_joint in enumerate(self.rob_joints_view):
+            self.robot.move_to_joint(rob_joint)
+            self.save_frame_3DScanning(idx)
+        
+        self.robot.go_home()
+        self.robot.disconnet()
+
+
 if __name__ == "__main__":
     root_dir = os.getcwd()
     cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
@@ -131,6 +203,7 @@ if __name__ == "__main__":
     APC = AffNetPourCapture(obj_name=obj_name, data_folder=data_dir, acc=1.0,
                             vel=1.0, cam2ee_file=cam2ee_file)
 
-    APC.save_frame()
+    # APC.save_frame()
+    APC.collect_data_3DScanning()
     print ("Finish!")
 
