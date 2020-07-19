@@ -12,7 +12,7 @@ import os
 test_classification = True
 check_spill = False
 
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt_0708"
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt_annotation"
 annotation_dir = "/home/hongtao/Dropbox/ICRA2021/annotation"
 annotation = ["0312", "0321", "0409", "0417"]
 annotation_all_file = "annotation_all.csv"
@@ -43,6 +43,9 @@ for csv_path in annotation_csv:
 
 print "Total object number: {}".format(len(obj_dict))
 
+num_container = 0
+num_noncontainer = 0
+
 for key, value in obj_dict.items():
     txt_filename = key + ".txt"
 
@@ -51,7 +54,15 @@ for key, value in obj_dict.items():
     with open(os.path.join(benchmark_dir, txt_filename), "w") as f:
         if value >= 3:
             writerow = "container 0 1 2 3"
-        elif value <= 2:
+            num_container += 1
+            print key, ": container"
+        else:
             writerow = "noncontainer 0 1 2 3"
+            num_noncontainer += 1
+            print key, ": noncontainer"
 
         f.write(writerow)
+    print "====="
+
+print "num_container: ", num_container
+print "num_noncontainer: ", num_noncontainer

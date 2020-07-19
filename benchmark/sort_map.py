@@ -11,10 +11,10 @@ from sklearn.metrics import roc_curve, auc, roc_auc_score
 import matplotlib.pyplot as plt
 
 
-# map_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_imgn_w_everything_0710"
-# gt_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/0708/test_set_all_gt_0708"
+# map_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_wo_perturbation"
+# gt_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt"
 
-map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_map/frame-000156"
+map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_imgn_containability"
 gt_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/gt_map"
 
 obj_list = os.listdir(map_dir)
