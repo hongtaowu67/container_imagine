@@ -2,7 +2,10 @@
 Move to the view with the largest AUC (156) and capture the frame for pouring.
 
 Author: Hongtao Wu
-July 13
+July 13, 2020
+
+Add modules to compute the z coordinate of pouring from scanned 3D model.
+July 14, 2020
 """
 import os
 import numpy as np
@@ -12,6 +15,13 @@ import cv2
 
 from robot import Robot
 from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
+
+from capture_view_pick import AutoCapture
+from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
+from processing.process import run_vhacd, write_urdf
+
+import pybullet as p
+
 
 class AffNetPourCapture:
     def __init__(self, obj_name, data_folder, acc, vel, cam2ee_file):
@@ -123,23 +133,21 @@ class AffNetPourCapture:
         depth_file_name = 'frame-{:06d}.depth.png'.format(idx+150)
         pose_file_name = 'frame-{:06d}.pose.txt'.format(idx+150)
 
-        if not self.automatic:
-            rgb_img, depth_img, camera_pose = self.cam.get_frame()
-        else:
-            rgb_img, depth_img, _ = self.cam.get_frame()
-            robot_pose = self.robot.get_pose()
-            camera_pose = np.matmul(robot_pose, self.cam2ee)
+
+        rgb_img, depth_img, _ = self.cam.get_frame()
+        robot_pose = self.robot.get_pose()
+        camera_pose = np.matmul(robot_pose, self.cam2ee)
 
         save_success = False
 
         if rgb_img is not None:
             # Save rgb image
-            cv2.imwrite(os.path.join(self.data_folder, rgb_file_name), rgb_img)
+            cv2.imwrite(os.path.join(self.data_folder, self.obj_name, 'rgbd', rgb_file_name), rgb_img)
             # Save depth image
-            cv2.imwrite(os.path.join(self.data_folder, depth_file_name), depth_img)
+            cv2.imwrite(os.path.join(self.data_folder, self.obj_name, 'rgbd', depth_file_name), depth_img)
 
             # Save pose txt file
-            f = open(os.path.join(self.data_folder, pose_file_name), 'w')
+            f = open(os.path.join(self.data_folder, self.obj_name, 'rgbd', pose_file_name), 'w')
             for line in camera_pose:
                 writeLine = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + '\n'
                 f.write(writeLine)
@@ -153,9 +161,6 @@ class AffNetPourCapture:
             rgb_filename = self.obj_name + "_affnet_pour_rgb.png"
             depth_filename = self.obj_name + "_affnet_pour_depth.png"
             pose_filename = self.obj_name + "_affnet_pour_pose.txt"
-            rgb_img, depth_img, _ = self.cam.get_frame()
-            robot_pose = self.robot.get_pose()
-            camera_pose = np.matmul(robot_pose, self.cam2ee)
 
             if rgb_img is not None:
                 # Save rgb image
@@ -184,21 +189,22 @@ class AffNetPourCapture:
             self.save_frame_3DScanning(idx)
         
         self.robot.go_home()
-        self.robot.disconnet()
+        self.robot.disconnect()
 
 
 if __name__ == "__main__":
     root_dir = os.getcwd()
     cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
-    obj_name = "Ikea_Fargrik_Bowl"
-    data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_pouring"
+    obj_name = "Ikea_Framkalla_Mug_Pink_3D"
+    data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_pouring_3DScanning"
 
     obj_dir = os.path.join(data_dir, obj_name)
     if os.path.exists(obj_dir):
         pass
     else:
         os.mkdir(obj_dir)
+        os.mkdir(os.path.join(obj_dir, 'rgbd'))
     
     APC = AffNetPourCapture(obj_name=obj_name, data_folder=data_dir, acc=1.0,
                             vel=1.0, cam2ee_file=cam2ee_file)
@@ -206,4 +212,49 @@ if __name__ == "__main__":
     # APC.save_frame()
     APC.collect_data_3DScanning()
     print ("Finish!")
+
+    ######## 3D reconstruct the object with TSDF Fusion #########
+    tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/TSDFfusion')
+
+    # TSDF Fusion
+    image_folder = os.path.join(data_dir, obj_name, 'rgbd')
+    camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
+    run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
+        voxel_grid_origin_x=-0.3, voxel_grid_origin_y=-0.55, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
+
+    # Segementation
+    tsdf_bin_file = os.path.join(data_dir, obj_name, 'rgbd/tsdf.bin')
+    tsdf_ply_file = os.path.join(data_dir, obj_name, 'rgbd/tsdf.ply')
+    ply_output_prefix = os.path.join(data_dir, obj_name, obj_name + '_point')
+    obj_mesh_output_prefix = os.path.join(data_dir, obj_name, obj_name + '_mesh')
+    segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
+    ##############################################################
+
+
+    ##################### VHACD processing #######################
+    object_name = obj_name + "_mesh_0"
+
+    # VHACD
+    vhacd_dir = os.path.join(root_dir, 'processing')
+    input_file = os.path.join(data_dir, obj_name, object_name + '.obj') 
+    output_file = os.path.join(data_dir, obj_name, object_name + '_vhacd.obj')
+    run_vhacd(vhacd_dir, input_file, output_file)
+
+    # URDF file
+    obj_urdf = os.path.join(data_dir, obj_name, object_name + '.urdf')
+    obj_original_file = object_name + '.obj'
+    obj_vhacd_file = object_name + '_vhacd.obj'
+    write_urdf(obj_urdf, obj_original_file, obj_vhacd_file)
+    ##############################################################
+
+    ###################### Get Z from AABB #######################
+    p.connect(p.GUI)
+    obj_id = p.loadURDF(obj_urdf)
+    obj_AABB = p.getAABB(obj_id)
+    pour_z = obj_AABB[1][-1] + 0.01 # 1cm above the aabb
+    pour_z_filename = obj_name + '_affnet_pour_point_z.txt'
+    with open(os.path.join(data_dir, obj_name, pour_z_filename), 'w') as f:
+        writeline = str(pour_z)
+        f.write(writeline)
+    ##############################################################
 
