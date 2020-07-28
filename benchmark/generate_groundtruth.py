@@ -12,13 +12,14 @@ import os
 test_classification = True
 check_spill = False
 
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt_annotation"
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_gt"
 annotation_dir = "/home/hongtao/Dropbox/ICRA2021/annotation"
-annotation = ["0312", "0321", "0409", "0417"]
+annotation = ["0312", "0321", "0409", "0417", "0720"]
 annotation_all_file = "annotation_all.csv"
 
 annotation_csv = [os.path.join(annotation_dir, annotation_group, "annotation_all", "annotation_"+ annotation_group + "_label.csv") for annotation_group  in annotation]
 obj_dict = {}
+obj_annotation_count = {}
 
 for csv_path in annotation_csv:
     print "Processing " + csv_path
@@ -30,13 +31,18 @@ for csv_path in annotation_csv:
             if obj_name == obj_name_check:
                 pour_mm = int(row[-6])
                 contain_mm = int(row[-5])
+
+                assert pour_mm is not None
+                assert contain_mm is not None
             
                 mm_open_container = pour_mm and contain_mm
 
                 if obj_name in obj_dict:
                     obj_dict[obj_name] += mm_open_container
+                    obj_annotation_count[obj_name] += 1
                 else:
                     obj_dict[obj_name] = mm_open_container
+                    obj_annotation_count[obj_name] = 1
             
             else:
                 raise ValueError(obj_name + " has problem with annotation.")
@@ -48,18 +54,19 @@ num_noncontainer = 0
 
 for key, value in obj_dict.items():
     txt_filename = key + ".txt"
-
-    print key, ": ", value
+    assert obj_annotation_count[key] == 5
+    # print key, ": ", value
     
     with open(os.path.join(benchmark_dir, txt_filename), "w") as f:
         if value >= 3:
             writerow = "container 0 1 2 3"
             num_container += 1
-            print key, ": container"
+
         else:
             writerow = "noncontainer 0 1 2 3"
             num_noncontainer += 1
-            print key, ": noncontainer"
+        
+        print key, ": ", value, " container/ ", (5-value), " noncontainer"
 
         f.write(writerow)
     print "====="
