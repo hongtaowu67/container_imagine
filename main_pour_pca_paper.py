@@ -29,10 +29,10 @@ from pour.pouring_3_pca import CupPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "TapeKing_Tape"
+data_name = "Book_Probabilistic_Robotics"
 pouring = False
 
-data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+data_root_dir = "/home/hongtao/Dropbox/ICRA2021/paper/contain_video_demo"
 
 
 start_time = time.time()
@@ -102,9 +102,10 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=True, mp4_dir=None, object_name=object_name, content_urdf=content_urdf)
+        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
+C.visualize_footprint()
 sphere_in_list = np.array(C.sphere_in_drop_pos)
 
 C.disconnect_p()
@@ -118,7 +119,7 @@ else:
 containability_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time
 #################################################################
 
-
+'''
 ################### Pouring Imagination ######################
 if pouring:
     if containability_affordance:
@@ -177,3 +178,4 @@ pouring_imagination_time = time.time() - start_time - autocapture_time - preproc
 #     file1.write("Pouring time: " + str(pouring_time) + "\n")
 #     file1.write("Object url: \n")
 ################################################################
+'''
