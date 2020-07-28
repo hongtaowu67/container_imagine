@@ -25,7 +25,7 @@ import os
 import math
 import trimesh
 
-
+red_sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m_red.urdf"
 sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 
 class Containability(object):
@@ -41,7 +41,7 @@ class Containability(object):
         # Hyperparameter
         self.sphere_num_max = 289
         self.sphere_num_min = 64
-        self.sphere_in_percentage_threshold = 0.08
+        self.sphere_in_percentage_threshold = 0.0
         self.sphere_urdf = content_urdf
         self.sphere_in_percentage = 0.0
         self.sphere_x_range = 0.0
@@ -91,7 +91,7 @@ class Containability(object):
             self.save_mp4_dir = mp4_dir
             mp4_file_name = self.object_name + "_contain.mp4"
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
-            p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
+            self.state_logging_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
 
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
 
@@ -236,6 +236,7 @@ class Containability(object):
 
         # Clear the sphere_in_drop_pos memory
         self.sphere_in_drop_pos = []
+        self.sphere_in_id = [] # add for visualizing the footprint
 
         # The center and range of the aabb. All scales are magnified by 100 times.
         obj_aabb_center = np.array([(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(3)]) * 100
@@ -251,6 +252,7 @@ class Containability(object):
             if np.all(in_box):
                 # print("x: %.2f" % x, "y: %.2f" % y, "z: %.2f" % z)
                 self.sphere_in_drop_pos.append(np.copy(self.sphere_drop_pos[i]))
+                self.sphere_in_id.append(i)
 
         return len(self.sphere_in_drop_pos)
 
@@ -357,7 +359,10 @@ class Containability(object):
                 if self.check_process:
                     time.sleep(1. / 240.)          
         
+
         # Figure 3
+        # p.stopStateLogging(self.state_logging_id)
+        # p.resetDebugVisualizerCamera(0.7, 0, -70, [-0.09, -0.1, 1])
         # import ipdb; ipdb.set_trace()
 
         ########## 2.0 Version of checking sphere ##########
@@ -407,6 +412,22 @@ class Containability(object):
             drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - t).T)
 
             return drop_center_original_frame
+
+
+    def visualize_footprint(self):
+        """ Visualize the footprint of an object """
+        # Remove all the current sphere
+        for sphere_id in self.sphere_id:
+            p.removeBody(sphere_id)
+        
+        # load sphere
+        for idx, pos in enumerate(self.sphere_drop_pos):
+            if idx in self.sphere_in_id:
+                p.loadURDF(red_sphere_urdf, basePosition=pos)
+            else:
+                p.loadURDF(sphere_urdf, basePosition=pos)
+        
+        import ipdb; ipdb.set_trace()
 
 
     def disconnect_p(self):
