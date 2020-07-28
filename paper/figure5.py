@@ -8,8 +8,12 @@ contents that remain within the cup after the drop.
 Instead of aligning with the world x- and y-axis, the cup openning align with the principal
 axis of the footprint of the contents remaining in the cup after the drop.
 
+Modify for figure 4
+
+Modify for figure 5
+
 Author: Hongtao Wu
-June 25, 2020
+June 30, 2020
 """
 
 from __future__ import division
@@ -23,6 +27,8 @@ import math
 import trimesh
 
 from sklearn.decomposition import PCA
+
+# from containability.containability_3_1 import Containability
 
 def isRotm(R) :
     # Checks if a matrix is a valid rotation matrix.
@@ -99,7 +105,6 @@ def rotm2angle(R):
     return [angle,x,y,z]
 
 
-
 class CupPour(object):
     def __init__(self, cup_urdf, content_urdf, obj_urdf, pour_pos, content_in_list_se2, indent_num=1, content_num=40,
                 obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
@@ -131,7 +136,7 @@ class CupPour(object):
         
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         # Reset debug camera postion
-        p.resetDebugVisualizerCamera(0.7, 0, -40, [-0.05, -0.1, 1])
+        p.resetDebugVisualizerCamera(0.7, 90, -40, [-0.20, -0.20, 1])
 
         self.pour_simulation_iteration = 500
         self.wait_simultaion_iteration = 100
@@ -189,21 +194,19 @@ class CupPour(object):
         # List of pivot position at diffrent pouring pos and cup angle
         self.pivot_pos_list = []
         # The SO(2) angle of principal axis with largest variance
-        self.content_large_var_angle = self.get_PCA_orn()
-
+        # self.content_large_var_angle = self.get_PCA_orn()
+    
+        self.marker_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_minimini.urdf"
 
     def cup_pour(self, indent=0.01):
         """
         Rotate the cup about the pour_pos.
         """
+        self.spill_list = []
+        pour_pos_list = []
 
-        # # For debug
-        # content_drop_z = self.pour_pos_nominal[2]
-        # for content_drop_pos in self.content_in_list_se2:
-        #     p.loadURDF(self.content_urdf, basePosition=(content_drop_pos[0], content_drop_pos[1], content_drop_z), useFixedBase=True)
-
-        for k in range(self.pour_num):
-            planar_angle = self.content_large_var_angle + k / self.pour_num * 2 * np.pi
+        for k in range(5, 6):
+            planar_angle = k / self.pour_num * 2 * np.pi
             spill_angle_list = []
             pivot_pos_angle_list = []
 
@@ -213,7 +216,9 @@ class CupPour(object):
                 self.pour_pos = np.zeros(3)
                 self.pour_pos[0] = self.pour_pos_nominal[0] - (indent + j * self.indent_len) * np.cos(planar_angle)
                 self.pour_pos[1] = self.pour_pos_nominal[1] - (indent + j * self.indent_len) * np.sin(planar_angle)
-                self.pour_pos[2] = self.pour_pos_nominal[2]
+                self.pour_pos[2] = self.pour_pos_nominal[2] #+ 0.001
+
+                pour_pos_list.append(self.pour_pos)
 
                 # Load cup
                 self.cup_id = p.loadURDF(self.cup_urdf)
@@ -221,7 +226,7 @@ class CupPour(object):
                 p.changeDynamics(self.cup_id, -1, mass=1)
                 self.cup_aabb = p.getAABB(self.cup_id)
 
-                # # For debug
+                # For debug
                 # p.loadURDF(self.content_urdf, basePosition=self.pour_pos, useFixedBase=True)
 
                 cup_half_length = self.cup_aabb[1][0] - 0.006
@@ -235,6 +240,8 @@ class CupPour(object):
                 p.resetBasePositionAndOrientation(self.cup_id,
                                                 posObj=self.cup_pos,
                                                 ornObj=p.getQuaternionFromEuler(self.cup_initial_orn))
+
+                # import ipdb; ipdb.set_trace()
 
                 # parentFramePosition: the joint frame pos in the object frame
                 # childFramePosition: the joint frame pos in the world frame if the child frame is set to be -1 (base)
@@ -259,6 +266,27 @@ class CupPour(object):
                     # Need to compensate for the np.pi/30 in the cup zero orientation
                     orn = p.getQuaternionFromEuler([0, (0.028575317269292654 + self.pour_angle) * math.sin(math.pi * 2 * i / int(4 * self.pour_simulation_iteration)), planar_angle])
                     p.changeConstraint(cup_constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+
+                # Code for shaking the cup (deprecated)
+                # cup_curr_pos, cup_curr_orn = p.getBasePositionAndOrientation(self.cup_id)
+                # cup_curr_rotm = p.getMatrixFromQuaternion(cup_curr_orn)
+                # cup_curr_rotm = np.array(cup_curr_rotm).reshape(3, 3)
+                # shake_angle = np.pi/4
+
+                # for i in range(self.pour_simulation_iteration):
+                #     p.stepSimulation()
+                #     shake_curr_angle = shake_angle * np.sin(2*np.pi * i / int(self.wait_simultaion_iteration/5))
+                #     shake_body_rotm = np.array([[np.cos(shake_curr_angle), -np.sin(shake_curr_angle), 0], 
+                #                                 [np.sin(shake_curr_angle), np.cos(shake_curr_angle), 0],
+                #                                 [0, 0, 1]])
+                #     shake_spatial_rotm = np.dot(cup_curr_rotm, shake_body_rotm)
+                #     shake_aa = rotm2angle(shake_spatial_rotm)
+                #     shake_angle = np.linalg.norm(shake_aa)
+                #     shake_axis = np.array(shake_aa / shake_angle)
+                #     shake_quat = np.sin(shake_angle/2) * shake_axis
+                #     shake_quat = shake_quat.tolist()
+                #     shake_quat.append(np.cos(shake_angle/2))
+                #     p.changeConstraint(cup_constraint_Id, pivot, jointChildFrameOrientation=shake_quat, maxForce=50)
                 
                 for i in range(self.wait_simultaion_iteration):
                     p.stepSimulation()
@@ -266,6 +294,8 @@ class CupPour(object):
                     if self.check_process:
                         time.sleep(1. / 240.)
                 
+
+                import ipdb; ipdb.set_trace()
                 spill = self.check_spillage()
                 p.removeBody(self.cup_id)
 
@@ -274,63 +304,142 @@ class CupPour(object):
 
             self.spill_list.append(spill_angle_list)
             self.pivot_pos_list.append(pivot_pos_angle_list)
+        
+        for pour_pos in pour_pos_list:
+            p.loadURDF(self.marker_urdf, basePosition=pour_pos)
+        p.loadURDF(self.marker_urdf, basePosition=self.pour_pos_nominal)
+
+        for content_id in self.content_id_list:
+            p.removeBody(content_id)
+
+        import ipdb; ipdb.set_trace()
 
         return self.spill_list
 
 
-    def cup_pour_at(self, imagined_pour_pos, imagined_cup_angle):
-
-        self.cup_id = p.loadURDF(self.cup_urdf)
-        cup_pos = np.array([0.0, 0.0, 0.0])
-        p.changeDynamics(self.cup_id, -1, mass=1)
-        cup_aabb = p.getAABB(self.cup_id)
+    def cup_pour_at_best_orn(self, imagined_pour_angle, indent=0.01):
+        """
+        Rotate the cup about the pour_pos.
+        """
 
         # # For debug
-        # p.loadURDF(self.content_urdf, basePosition=self.pour_pos, useFixedBase=True)
+        # content_drop_z = self.pour_pos_nominal[2]
+        # for content_drop_pos in self.content_in_list_se2:
+        #     p.loadURDF(self.content_urdf, basePosition=(content_drop_pos[0], content_drop_pos[1], content_drop_z), useFixedBase=True)
 
-        cup_half_length = self.cup_aabb[1][0] - 0.006
-        pour_pos_offset = - cup_half_length * np.array([np.cos(imagined_cup_angle), np.sin(imagined_cup_angle)])
-        cup_pos[0] = imagined_pour_pos[0] + pour_pos_offset[0]
-        cup_pos[1] = imagined_pour_pos[1] + pour_pos_offset[1] 
-        cup_pos[2] = imagined_pour_pos[2] + (-cup_aabb[0][2] - 0.01) # offset for the tip of the cup
+        planar_angle = imagined_pour_angle
 
-        cup_initial_orn = [0, 0, imagined_cup_angle]
+        for j in range(self.indent_num):
 
-        p.resetBasePositionAndOrientation(self.cup_id,
-                                        posObj=cup_pos,
-                                        ornObj=p.getQuaternionFromEuler(cup_initial_orn))
+            # Pour position for different angle. Indent is included for x the offset from the nominal pour pos.
+            self.pour_pos = np.zeros(3)
+            self.pour_pos[0] = self.pour_pos_nominal[0] - (indent + j * self.indent_len) * np.cos(planar_angle)
+            self.pour_pos[1] = self.pour_pos_nominal[1] - (indent + j * self.indent_len) * np.sin(planar_angle)
+            self.pour_pos[2] = self.pour_pos_nominal[2]
 
-        # parentFramePosition: the joint frame pos in the object frame
-        # childFramePosition: the joint frame pos in the world frame if the child frame is set to be -1 (base)
-        # parentFrameOrientation: the joint frame orn in the object frame
-        # childFrameOrientation: the joint frame orn in the world frame if the child frame is set to be -1 (base)
-        cup_constraint_Id = p.createConstraint(self.cup_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                                                parentFramePosition=[cup_half_length, 0.0, imagined_pour_pos[2]-cup_pos[2]], 
-                                                childFramePosition=imagined_pour_pos,
-                                                parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
-                                                childFrameOrientation=p.getQuaternionFromEuler(cup_initial_orn))
+            # Load cup
+            self.cup_id = p.loadURDF(self.cup_urdf)
+            self.cup_pos = np.array([0.0, 0.0, 0.0])
+            p.changeDynamics(self.cup_id, -1, mass=1)
+            self.cup_aabb = p.getAABB(self.cup_id)
 
-        self.set_content(imagined_cup_angle)
+            # # For debug
+            # p.loadURDF(self.content_urdf, basePosition=self.pour_pos, useFixedBase=True)
+
+            cup_half_length = self.cup_aabb[1][0] - 0.006
+            pour_pos_offset = - cup_half_length * np.array([np.cos(planar_angle), np.sin(planar_angle)])
+            self.cup_pos[0] = self.pour_pos[0] + pour_pos_offset[0]
+            self.cup_pos[1] = self.pour_pos[1] + pour_pos_offset[1] 
+            self.cup_pos[2] = self.pour_pos[2] + (-self.cup_aabb[0][2] - 0.01) # offset for the tip of the cup
+
+            self.cup_initial_orn = [0, 0, planar_angle]
+
+            p.resetBasePositionAndOrientation(self.cup_id,
+                                            posObj=self.cup_pos,
+                                            ornObj=p.getQuaternionFromEuler(self.cup_initial_orn))
+
+            # parentFramePosition: the joint frame pos in the object frame
+            # childFramePosition: the joint frame pos in the world frame if the child frame is set to be -1 (base)
+            # parentFrameOrientation: the joint frame orn in the object frame
+            # childFrameOrientation: the joint frame orn in the world frame if the child frame is set to be -1 (base)
+            cup_constraint_Id = p.createConstraint(self.cup_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
+                                                    parentFramePosition=[cup_half_length, 0.0, self.pour_pos[2]-self.cup_pos[2]], 
+                                                    childFramePosition=self.pour_pos,
+                                                    parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
+                                                    childFrameOrientation=p.getQuaternionFromEuler(self.cup_initial_orn))
+
+            self.set_content(planar_angle)
+
+            pivot = self.pour_pos              
+
+            for i in range(self.pour_simulation_iteration):
+                p.stepSimulation()
+
+                if self.check_process:
+                    time.sleep(1. / 240.)           
+
+                # Need to compensate for the np.pi/30 in the cup zero orientation
+                orn = p.getQuaternionFromEuler([0, (0.028575317269292654 + self.pour_angle) * math.sin(math.pi * 2 * i / int(4 * self.pour_simulation_iteration)), planar_angle])
+                p.changeConstraint(cup_constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+            
+
+            
+            for i in range(self.wait_simultaion_iteration):
+                p.stepSimulation()
+
+
+                if self.check_process:
+                    time.sleep(1. / 240.)
+            
+            # For snapshot of the end of a pouring    
+
+            
+            spill = self.check_spillage()
+            print("Spill: ", spill)
+            import ipdb; ipdb.set_trace()
+            p.removeBody(self.cup_id)
+
+    
+    def figure5(self, spill_list, imagined_cup_angle, marker_urdf, indent=0.01):
+        physical_client = p.connect(p.GUI)
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        p.resetDebugVisualizerCamera(0.7, 90, -40, [-0.20, -0.20, 1])
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        plane_id = p.loadURDF("plane.urdf")
         
-        pivot = pour_pos
+        # Object
+        self.obj_id = p.loadURDF(obj_urdf, basePosition=self.obj_zero_pos)
+        self.obj_raise = 0.1
 
-        # import ipdb; ipdb.set_trace()
+        constraint_Id = p.createConstraint(self.obj_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
+                parentFramePosition=[0, 0, 0], childFramePosition=self.obj_zero_pos)
 
-        for i in range(self.pour_simulation_iteration):
-            p.stepSimulation()
 
-            if self.check_process:
-                time.sleep(1. / 240.)           
+        spill_list = np.array(spill_list)
+        print ("Spill list: ", spill_list)
 
-            # Need to compensate for the np.pi/30 in the cup zero orientation
-            orn = p.getQuaternionFromEuler([0, (0.028575317269292654 + self.pour_angle) * math.sin(math.pi * 2 * i / int(4 * self.pour_simulation_iteration)), imagined_cup_angle])
-            p.changeConstraint(cup_constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
-        
-        for i in range(self.wait_simultaion_iteration):
-            p.stepSimulation()
+        spill_list_angle_sum = np.sum(spill_list, axis=1)
+        min_spillage_sum_angle = spill_list_angle_sum.min()
+        cup_angle_idx_list = np.where(spill_list_angle_sum == min_spillage_sum_angle)
 
-            if self.check_process:
-                time.sleep(1. / 240.)
+        p.loadURDF(marker_urdf, basePosition=self.pour_pos_nominal)
+
+        planar_angle = imagined_cup_angle
+
+        for j in range(self.indent_num):
+
+            # Pour position for different angle. Indent is included for x the offset from the nominal pour pos.
+            self.pour_pos = np.zeros(3)
+            self.pour_pos[0] = self.pour_pos_nominal[0] - (indent + j * self.indent_len) * np.cos(planar_angle)
+            self.pour_pos[1] = self.pour_pos_nominal[1] - (indent + j * self.indent_len) * np.sin(planar_angle)
+            self.pour_pos[2] = self.pour_pos_nominal[2]
+
+            print("Average pour pos: ", self.pour_pos)
+
+            p.loadURDF(marker_urdf, basePosition=self.pour_pos)
+            
+        import ipdb; ipdb.set_trace()
+        self.disconnect_p()
 
 
     def set_content(self, planar_angle):
@@ -431,8 +540,8 @@ class CupPour(object):
                         min_spill_angle_idx = cup_angle_idx
                         min_spill_angle_pos_idx = spill_angle_pos_min_idx
 
-        print "min_spill_angle_idx: ", min_spill_angle_idx
-        print "min_spill_angle_pos_idx: ", min_spill_angle_pos_idx
+        print ("min_spill_angle_idx: ", min_spill_angle_idx)
+        print ("min_spill_angle_pos_idx: ", min_spill_angle_pos_idx)
 
         pivot_pos = self.pivot_pos_list[min_spill_angle_idx][min_spill_angle_pos_idx] - self.obj_zero_pos
         cup_angle = self.content_large_var_angle + min_spill_angle_idx * np.pi/4
@@ -440,12 +549,12 @@ class CupPour(object):
         if cup_angle > np.pi:
             cup_angle -= 2*np.pi
 
-        print "self.pivot_pos_list"
-        print self.pivot_pos_list
-        print "Best pour cup angle"
-        print cup_angle
-        print "Best pour pivot pos"
-        print pivot_pos
+        # print "self.pivot_pos_list"
+        # print self.pivot_pos_list
+        # print "Best pour cup angle"
+        # print cup_angle
+        # print "Best pour pivot pos"
+        # print pivot_pos
         
         return pivot_pos, cup_angle
 
@@ -465,7 +574,7 @@ class CupPour(object):
         large_var_axis = pca.components_[0]
         content_large_var_angle = np.arctan2(large_var_axis[1], large_var_axis[0])
         
-        print "PCA orn angle: ", content_large_var_angle
+        # print "PCA orn angle: ", content_large_var_angle
         return content_large_var_angle
 
 
@@ -474,18 +583,29 @@ class CupPour(object):
 
 
 
+
 if __name__ == "__main__":
-    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/data/training_set/Container/Amazon_Name_Card_Holder/Amazon_Name_Card_Holder_mesh_0.urdf"
+    obj_urdf = "/home/hongtao/Dropbox/ICRA2021/paper/figure5/Ikea_Godtagbar_Candlestick_pour_pca/Ikea_Godtagbar_Candlestick_pour_pca_mesh_0.urdf"
     cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
     content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-    pour_pos = np.array([-0.11286258922851207, -0.28667539144459603, 0.14344400513172162])
+    marker_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_minimini.urdf"
+    pour_pos = np.array([-0.18102433, -0.35671043,  0.17777001])
+    spill_list = [[47, 31, 5], [48, 40, 9], [51, 41, 25], [45, 30, 9], [52, 17, 0], [52, 10, 0], [42, 15, 2], [50, 21, 2]]
+    imagined_cup_angle = -1.2591067731697323 - np.pi/4
     mp4_dir = "/home/hongtao/Desktop"
     obj_name = "Amazon_Name_Card_Holder"
-    CP = CupPour(cup_urdf, content_urdf, obj_urdf, pour_pos, obj_zero_pos=[0, 0, 1], indent_num=3,
-                    check_process=False)#, mp4_dir=mp4_dir, object_name=obj_name)
+    # C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
+    #     check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
+    # containability_affordance, sphere_in_percentage = C.get_containability()
+    # sphere_in_list = np.array(C.sphere_in_drop_pos)
 
-    BP.disconnect_p()
+    CP = CupPour(cup_urdf, content_urdf, obj_urdf, pour_pos, content_in_list_se2=None, obj_zero_pos=[0, 0, 1], indent_num=3,
+                    check_process=True, mp4_dir=None, object_name=obj_name)
+
+    CP.disconnect_p()
+    CP.figure5(spill_list=spill_list, imagined_cup_angle=imagined_cup_angle, marker_urdf=marker_urdf)
+    # CP.cup_pour_at_best_orn(imagined_cup_angle)
 
 
     

@@ -16,8 +16,6 @@ import time
 import math
 import trimesh
 
-from sklearn.decomposition import PCA
-
 def isRotm(R) :
     # Checks if a matrix is a valid rotation matrix.
     # Forked from Andy Zeng

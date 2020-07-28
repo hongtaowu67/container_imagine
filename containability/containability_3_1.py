@@ -25,13 +25,13 @@ import os
 import math
 import trimesh
 
-
+red_sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m_red.urdf"
 sphere_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 
 class Containability(object):
-    def __init__(self, obj_urdf, obj_vhacd_mesh, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-                 check_process=False, mp4_dir=None, object_name=None,
-                 content_urdf=sphere_urdf):
+    def __init__(self, obj_urdf, obj_vhacd_mesh, rotate=True, translate=True, friction=True, restitution=True,
+                obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], check_process=False, mp4_dir=None, object_name=None,
+                content_urdf=sphere_urdf):
         """
         Args:
         - obj_zero_orn: the start orientation of the object in Euler Angle
@@ -41,7 +41,7 @@ class Containability(object):
         # Hyperparameter
         self.sphere_num_max = 289
         self.sphere_num_min = 64
-        self.sphere_in_percentage_threshold = 0.08
+        self.sphere_in_percentage_threshold = 0.0
         self.sphere_urdf = content_urdf
         self.sphere_in_percentage = 0.0
         self.sphere_x_range = 0.0
@@ -51,7 +51,6 @@ class Containability(object):
         self.y_sphere_num = 0
 
         # Restitution
-        self.sphere_restitution = 0.1
         self.object_restitution = 0.1
         self.plane_restitution = 0.1
 
@@ -61,7 +60,10 @@ class Containability(object):
         # Simulation Parameter
         self.simulation_iteration = 1500
         self.check_process = check_process
-        self.rotate_accelerate = True
+        self.rotate = rotate # if add rotate
+        self.translate = translate # if add translate
+        self.friction = friction # if add friction for the content
+        self.restitution = restitution
 
         # Sphere Information
         self.sphere_id = []
@@ -69,7 +71,10 @@ class Containability(object):
         self.sphere_drop_pos = []
         self.sphere_in_drop_pos = []
         self.sphere_drop_z = 0
-        self.sphere_lateralfriction=0.005
+        self.sphere_restitution = 0.1
+        self.sphere_lateralfriction = 0.005
+        self.sphere_spinningfriction = 0.5
+        self.sphere_rollingfriction = 0.5
 
         # Set the world
         if not check_process:
@@ -81,12 +86,12 @@ class Containability(object):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         # Save mp4 video
+        self.object_name = object_name
         if mp4_dir is not None:
             self.save_mp4_dir = mp4_dir
-            self.object_name = object_name
             mp4_file_name = self.object_name + "_contain.mp4"
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
-            p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
+            self.state_logging_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
 
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
 
@@ -127,15 +132,12 @@ class Containability(object):
         Make sure that pybullet has already been connected before calling this function.             
         """
 
+        # Measure the dimension of each content
         sphere = p.loadURDF(self.sphere_urdf, basePosition=[0, 0, -1])
-
-        if "jelly_bean" in self.sphere_urdf:
-            p.resetBasePositionAndOrientation(sphere, posObj=[0, 0, -1], ornObj=p.getQuaternionFromEuler([0, np.pi/2, 0]))
-
         p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
                 lateralFriction=self.sphere_lateralfriction,
-                spinningFriction=0.5,
-                rollingFriction=0.5)
+                spinningFriction=self.sphere_spinningfriction,
+                rollingFriction=self.sphere_rollingfriction)
 
         sphere_aabb = p.getAABB(sphere)
         p.removeBody(sphere)
@@ -174,10 +176,35 @@ class Containability(object):
         # Set up sphere
         for i in range(self.drop_sphere_num):
             sphere = p.loadURDF(self.sphere_urdf)
-            p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
-                    lateralFriction=self.sphere_lateralfriction,
-                    spinningFriction=0.5,
-                    rollingFriction=0.5)
+            if (self.friction) and (self.restitution):
+                # add both friction and restitution
+                p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
+                        lateralFriction=self.sphere_lateralfriction,
+                        spinningFriction=self.sphere_spinningfriction,
+                        rollingFriction=self.sphere_rollingfriction)
+                # print ("friction restitution")
+            elif (self.friction) and (not self.restitution):
+                # add friction but not restitution
+                p.changeDynamics(sphere, -1, restitution=0, 
+                        lateralFriction=self.sphere_lateralfriction,
+                        spinningFriction=self.sphere_spinningfriction,
+                        rollingFriction=self.sphere_rollingfriction)
+                # print ("just friction")
+            elif (not self.friction) and (self.restitution):
+                # add resitution but not friction
+                p.changeDynamics(sphere, -1, restitution=self.sphere_restitution, 
+                        lateralFriction=0,
+                        spinningFriction=0,
+                        rollingFriction=0)
+                # print ("just restitution")
+            else:
+                # add not restitution or friction
+                p.changeDynamics(sphere, -1, restitution=0, 
+                        lateralFriction=0,
+                        spinningFriction=0,
+                        rollingFriction=0)
+                # print ("nothing added")
+
 
             self.sphere_id.append(sphere)
         
@@ -209,6 +236,7 @@ class Containability(object):
 
         # Clear the sphere_in_drop_pos memory
         self.sphere_in_drop_pos = []
+        self.sphere_in_id = [] # add for visualizing the footprint
 
         # The center and range of the aabb. All scales are magnified by 100 times.
         obj_aabb_center = np.array([(obj_curr_aabb[0][i] + obj_curr_aabb[1][i])/2 for i in range(3)]) * 100
@@ -224,6 +252,7 @@ class Containability(object):
             if np.all(in_box):
                 # print("x: %.2f" % x, "y: %.2f" % y, "z: %.2f" % z)
                 self.sphere_in_drop_pos.append(np.copy(self.sphere_drop_pos[i]))
+                self.sphere_in_id.append(i)
 
         return len(self.sphere_in_drop_pos)
 
@@ -236,6 +265,9 @@ class Containability(object):
         # Load sphere
         self.load_sphere(self.obj_curr_aabb)
 
+        # Figure 2
+        # import ipdb; ipdb.set_trace()
+
         ########################### Drop Sphere Into ############################
         force = 1
 
@@ -243,30 +275,29 @@ class Containability(object):
         # Pivot for rotating the object
         pivot = self.obj_com_zero
 
-
-        for i in range(self.simulation_iteration):
+        if (self.rotate) and (self.translate):
+            print ("rotate and translate")
+            for i in range(self.simulation_iteration):
             
-            # Figure 3
-            # if i == int(1 * self.simulation_iteration / 100):
-            #     import ipdb; ipdb.set_trace()
+                # Figure 3
+                # if i == int(1 * self.simulation_iteration / 100):
+                #     import ipdb; ipdb.set_trace()
 
-            # if i == int(1 * self.simulation_iteration / 50):
-            #     import ipdb; ipdb.set_trace()
-            
-            # if i == int(1 * self.simulation_iteration / 10):
-            #     import ipdb; ipdb.set_trace()
+                # if i == int(1 * self.simulation_iteration / 50):
+                #     import ipdb; ipdb.set_trace()
+                
+                # if i == int(1 * self.simulation_iteration / 10):
+                #     import ipdb; ipdb.set_trace()
 
-            p.stepSimulation()
+                p.stepSimulation()
 
-            if self.check_process:
-                time.sleep(1. / 240.)
+                if self.check_process:
+                    time.sleep(1. / 240.)
 
-            # if i == int(1 * self.simulation_iteration / 10):
-            #     # Check the number of sphere in the bbox before moving the sphere away
-            #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
+                # if i == int(1 * self.simulation_iteration / 10):
+                #     # Check the number of sphere in the bbox before moving the sphere away
+                #     sphere_in_num = self.checkincup(self.obj_curr_aabb)            
 
-            # flag for ablation study
-            if self.rotate_accelerate:
                 # 2.0: Shake Objects
                 if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
                     orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
@@ -274,9 +305,10 @@ class Containability(object):
                 elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
                     orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
                     p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+                
 
                 # 3.0: Horizontal Acceleration
-                elif i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
+                if i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
                     p.setGravity(0.5, 0.0, -9.81)
                 elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
                     p.setGravity(-0.5, 0.0, -9.81)
@@ -285,7 +317,52 @@ class Containability(object):
                 elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
                     p.setGravity(0.0, -0.5, -9.81)
         
+        elif (not self.rotate) and (self.translate):
+            print ("just translate")
+            for i in range(self.simulation_iteration):
+                p.stepSimulation()
+
+                if self.check_process:
+                    time.sleep(1. / 240.)            
+
+                # 3.0: Horizontal Acceleration
+                if i > int(9 * self.simulation_iteration / 10) and i <= int(9.25 * self.simulation_iteration / 10):
+                    p.setGravity(0.5, 0.0, -9.81)
+                elif i > int(9.25 * self.simulation_iteration / 10) and i <= int(9.5 * self.simulation_iteration / 10):
+                    p.setGravity(-0.5, 0.0, -9.81)
+                elif i > int(9.5 * self.simulation_iteration / 10) and i <= int(9.75 * self.simulation_iteration / 10):
+                    p.setGravity(0.0, 0.5, -9.81)
+                elif i > int(9.75 * self.simulation_iteration / 10) and i <= int(10 * self.simulation_iteration / 10):
+                    p.setGravity(0.0, -0.5, -9.81)
+
+        elif (self.rotate) and (not self.translate):
+            print ("just rotate")
+            for i in range(self.simulation_iteration):
+                p.stepSimulation()
+
+                if self.check_process:
+                    time.sleep(1. / 240.)          
+
+                # 2.0: Shake Objects
+                if i > int(1 * self.simulation_iteration / 10) and i <= int(5 * self.simulation_iteration / 10):
+                    orn = p.getQuaternionFromEuler([math.pi/60 * math.sin(math.pi * 2 * (i - int(1 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0, 0])
+                    p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+                elif i > int(5 * self.simulation_iteration / 10) and i <= int(9 * self.simulation_iteration / 10):
+                    orn = p.getQuaternionFromEuler([0, math.pi/60 * math.sin(math.pi * 2 * (i - int(5 * self.simulation_iteration / 10)) / int(4 * self.simulation_iteration / 10)), 0])
+                    p.changeConstraint(self.constraint_Id, pivot, jointChildFrameOrientation=orn, maxForce=50)
+        
+        elif (not self.rotate) and (not self.translate):
+            print ("not rotate not translate")
+            for i in range(self.simulation_iteration):
+                p.stepSimulation()
+
+                if self.check_process:
+                    time.sleep(1. / 240.)          
+        
+
         # Figure 3
+        # p.stopStateLogging(self.state_logging_id)
+        # p.resetDebugVisualizerCamera(0.7, 0, -70, [-0.09, -0.1, 1])
         # import ipdb; ipdb.set_trace()
 
         ########## 2.0 Version of checking sphere ##########
@@ -297,12 +374,14 @@ class Containability(object):
 
         if sphere_num_percentage > self.sphere_in_percentage_threshold:
             print("#####################################")
+            print self.object_name
             print("THIS IS A CONTAINER! The sphere in percentage is: {}".format(sphere_num_percentage))
             print("#####################################")
             self.containability = True
 
         else:
             print("/////////////////////////////////////")
+            print self.object_name
             print("THIS IS NOT A CONTAINER!The sphere in percentage is: {}".format(sphere_num_percentage))
             print("/////////////////////////////////////")
             self.containability = False
@@ -333,6 +412,22 @@ class Containability(object):
             drop_center_original_frame = np.dot(np.linalg.inv(R), (drop_center_curr_frame - t).T)
 
             return drop_center_original_frame
+
+
+    def visualize_footprint(self):
+        """ Visualize the footprint of an object """
+        # Remove all the current sphere
+        for sphere_id in self.sphere_id:
+            p.removeBody(sphere_id)
+        
+        # load sphere
+        for idx, pos in enumerate(self.sphere_drop_pos):
+            if idx in self.sphere_in_id:
+                p.loadURDF(red_sphere_urdf, basePosition=pos)
+            else:
+                p.loadURDF(sphere_urdf, basePosition=pos)
+        
+        import ipdb; ipdb.set_trace()
 
 
     def disconnect_p(self):
