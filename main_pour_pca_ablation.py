@@ -21,12 +21,12 @@ from capture_view_pick import AutoCapture
 from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
 from processing.process import run_vhacd, write_urdf
 from containability.containability_3_1 import Containability
-from pour.pouring_3_pca import CupPour
+from pour.pouring_3_pca_ablation import CupPour
 from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Gotham_pan_pour_pca"
+data_name = "GreenPan_pan_pour_ablation"
 pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
@@ -115,19 +115,16 @@ else:
 containability_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time
 #################################################################
 
-
 ################### Pouring Imagination ######################
 if pouring:
     if containability_affordance:
         print "Start pouring imagination..."
-        sphere_in_list_se2 = sphere_in_list[:, :2]
-        CP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, sphere_in_list_se2, indent_num=3, content_num=60,
+        CP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, indent_num=3, content_num=60,
                         obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=mp4_dir, object_name=object_name)
         spill_list = CP.cup_pour()
         print "Spill List: {}".format(spill_list)
 
-        imagined_pour_pos, imagined_cup_angle = CP.best_pour_pos_orn()
-        # CP.cup_pour_at(imagined_pour_pos, imagined_cup_angle)
+        imagined_pour_pos, imagined_cup_angle = CP.best_pour_pos_orn_ablation()
         CP.disconnect_p()
     else:
         spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
