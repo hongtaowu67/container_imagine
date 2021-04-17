@@ -29,10 +29,10 @@ from pour.pouring_3_pca import CupPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Book_Probabilistic_Robotics"
-pouring = False
+data_name = "Gravy_Boat_pour_pca"
+pouring = True
 
-data_root_dir = "/home/hongtao/Dropbox/ICRA2021/paper/contain_video_demo"
+data_root_dir = "/home/hongtao/Dropbox/ICRA2021/paper/introductory_video"
 
 
 start_time = time.time()
@@ -102,7 +102,7 @@ mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
 C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=True, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 C.visualize_footprint()
@@ -119,7 +119,7 @@ else:
 containability_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time
 #################################################################
 
-'''
+
 ################### Pouring Imagination ######################
 if pouring:
     if containability_affordance:
@@ -127,21 +127,45 @@ if pouring:
         sphere_in_list_se2 = sphere_in_list[:, :2]
         CP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, sphere_in_list_se2, indent_num=3, content_num=60,
                         obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=None, object_name=object_name)
-        spill_list = CP.cup_pour()
-        print ("Spill List: {}".format(spill_list))
+        # spill_list = CP.cup_pour()
+        # print ("Spill List: {}".format(spill_list))
 
         # imagined_pour_pos, imagined_cup_angle = CP.best_pour_pos_orn()
         # print("imagined_pour_pos, imagined_cup_angle: {}, {}".format(imagined_pour_pos, imagined_cup_angle))
         # CP.cup_pour_at_best_orn(imagined_cup_angle)
-        # CP.cup_pour_at(imagined_pour_pos, imagined_cup_angle)
+        imagined_pour_pos = np.array([-0.14386363, -0.29602137, 0.182642])
+        imagined_cup_angle = -0.028660705817094623
+        CP.cup_pour_at(imagined_pour_pos, imagined_cup_angle)
         CP.disconnect_p()
     else:
         spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
 
 pouring_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time
-##############################################################
+#############################################################
 
 
+# ###############################################################
+# result_txt_name = os.path.join(data_folder, data_name + ".txt")
+# with open(result_txt_name, "w") as file1:
+#     today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
+#     file1.write("Figure 5 data \n")
+#     file1.write("Name: " + data_name + "\n")
+#     file1.write("Date: " + today + "\n")
+#     file1.write("Containability: " + str(containability_affordance) + "\n")
+#     file1.write("Sphere in percentage: " + str(sphere_in_percentage) + "\n")
+#     file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
+#     file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
+#     file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
+#     file1.write("Spill List: " + str(list(spill_list)) + "\n")
+#     # file1.write("Robot scanning time: " + str(autocapture_time) + "\n")
+#     # file1.write("Model processing time: " + str(preprocessing_time) + "\n")
+#     # file1.write("Containability imagination time: " + str(containability_imagination_time) + "\n")
+#     # file1.write("Pouring imagination time: " + str(pouring_imagination_time) + "\n")
+#     # file1.write("Pouring time: " + str(pouring_time) + "\n")
+#     file1.write("Object url: \n")
+# ###############################################################
+
+'''
 # ################## Real Robot Pouring #####################
 # if pouring:
 #     if containability_affordance:

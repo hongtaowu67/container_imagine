@@ -12,15 +12,25 @@ import os
 test_classification = True
 check_spill = False
 
-benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_gt"
+benchmark_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/training_set_containability_gt"
 annotation_dir = "/home/hongtao/Dropbox/ICRA2021/annotation"
 annotation = ["0312", "0321", "0409", "0417", "0720"]
-annotation_all_file = "annotation_all.csv"
 
-annotation_csv = [os.path.join(annotation_dir, annotation_group, "annotation_all", "annotation_"+ annotation_group + "_label.csv") for annotation_group  in annotation]
+# Test set annotation
+# annotation_csv = [os.path.join(annotation_dir, annotation_group, "annotation_all", "annotation_"+ annotation_group + "_label.csv") for annotation_group  in annotation]
+
+# Training set annotation
+annotation_csv = []
+for annotation_group in annotation:
+    annotation_group_dir = os.path.join(annotation_dir, annotation_group, "annotation_all")
+    filenames = os.listdir(annotation_group_dir)
+    for filename in filenames:
+        if "_train_label" in filename:
+            annotation_csv.append(os.path.join(annotation_group_dir, filename))
+
 obj_dict = {}
 obj_annotation_count = {}
-
+    
 for csv_path in annotation_csv:
     print "Processing " + csv_path
     with open(csv_path, 'r') as csvfile:
@@ -52,10 +62,13 @@ print "Total object number: {}".format(len(obj_dict))
 num_container = 0
 num_noncontainer = 0
 
+
+############## Write Groundtruth ################
 for key, value in obj_dict.items():
     txt_filename = key + ".txt"
+    print key, ": ", value, ", ", obj_annotation_count[key]
     assert obj_annotation_count[key] == 5
-    # print key, ": ", value
+
     
     with open(os.path.join(benchmark_dir, txt_filename), "w") as f:
         if value >= 3:
@@ -73,3 +86,22 @@ for key, value in obj_dict.items():
 
 print "num_container: ", num_container
 print "num_noncontainer: ", num_noncontainer
+################################################
+
+
+# data_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_object"
+# class_folders = os.listdir(data_dir)
+# obj_list = []
+
+# for class_name in class_folders:
+#     class_dir = os.path.join(data_dir, class_name)
+#     obj_folders = os.listdir(class_dir)
+
+#     for obj in obj_folders:
+#         obj_list.append(obj)
+
+# print "Number of objects: ", len(obj_list)
+
+# for key, value in obj_dict.items():
+#     if key in obj_list:
+#         print key, ": ", value

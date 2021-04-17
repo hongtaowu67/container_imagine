@@ -11,13 +11,13 @@ from sklearn.metrics import roc_curve, auc, roc_auc_score
 import matplotlib.pyplot as plt
 
 
-# map_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_w_everything"
-# gt_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_all_gt"
+map_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_w_everything_0728"
+gt_dir = "/home/hongtao/Dropbox/ICRA2021/benchmark/test_set_containability_gt"
 
-map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_map_0726/frame-000156"
-gt_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_test_set_gt"
+# map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/imgn_map_0726"
+# gt_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_test_set_gt"
 
-test_affnet = True
+test_affnet = False
 
 obj_list = os.listdir(gt_dir)
 print ("Object number: ", len(obj_list))
@@ -56,7 +56,7 @@ for obj_filename in obj_list:
             else:
                 raise ValueError(obj_name + '_classification.txt is neither container nor noncontainer!')
                 
-            print (obj_name, ': ', line)
+            # print (obj_name, ': ', line)
 
     obj_info_list.append((obj_name, obj_map, obj_iscontainer))
 
@@ -92,6 +92,7 @@ if not test_affnet:
 
 ######## Calculate accuracy (affnet) ########
 if test_affnet:
+
     correct_classification = 0
     total_obj_num = 0
     container_num = 0
@@ -99,8 +100,14 @@ if test_affnet:
     for obj in obj_info_list:
         total_obj_num += 1
         obj_prediction = obj_prediction_result[obj[0]]
+        print ("Affnet Prediction")
         print (obj[0], ': ',obj_prediction)
+        
         obj_gt = obj[2]
+        print ("Ground Truth")
+        print (obj[0], ': ',obj_gt)
+
+        print ("==========")
         if obj_prediction == obj_gt:
             correct_classification += 1
         container_num += obj_gt

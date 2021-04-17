@@ -2,14 +2,8 @@
 This script imagines pouring from a container onto the object.
 Find the best pouring spot and angle for pouring into a specific object.
 
-This is an improved version which consider the principal axis of the footprint of the
-contents that remain within the cup after the drop.
-
-Instead of aligning with the world x- and y-axis, the cup openning align with the principal
-axis of the footprint of the contents remaining in the cup after the drop.
-
 Author: Hongtao Wu
-June 25, 2020
+March 28, 2020
 """
 
 from __future__ import division
@@ -21,8 +15,6 @@ import os
 import time
 import math
 import trimesh
-
-from sklearn.decomposition import PCA
 
 def isRotm(R) :
     # Checks if a matrix is a valid rotation matrix.
@@ -101,7 +93,7 @@ def rotm2angle(R):
 
 
 class CupPour(object):
-    def __init__(self, cup_urdf, content_urdf, obj_urdf, pour_pos, content_in_list_se2, indent_num=1, content_num=40,
+    def __init__(self, cup_urdf, content_urdf, obj_urdf, pour_pos, indent_num=1, content_num=40,
                 obj_zero_pos=[0, 0, 0], obj_zero_orn=[0, 0, 0], 
                 check_process=False, mp4_dir=None, object_name=None):
         """
@@ -109,7 +101,6 @@ class CupPour(object):
         -- cup_obj: the urdf of the pouring cup
         -- obj_urdf: the urdf of the object being poured
         -- pour_pos (np array in [x y z]): the position of the pour point
-        -- content_in_list (nx2 np array): se2 drop postions of the contents remained in the object in the containability imagiantion
         -- indent_num: the number of indent in a single pouring angle
         -- obj_zero_pos (list): x y z of the object initial position
         -- obj_zero_orn (list): Euler angle (roll pitch yaw) of the object initial orientation
@@ -117,7 +108,7 @@ class CupPour(object):
         super(CupPour, self).__init__()
         
         if check_process:
-            self.physical_client = p.connect(p.GUI)
+            self.pysical_client = p.connect(p.GUI)
         else:
             self.physical_client = p.connect(p.DIRECT)
 
@@ -129,7 +120,7 @@ class CupPour(object):
             mp4_file_path = os.path.join(self.save_mp4_dir, mp4_file_name)
             p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, mp4_file_path)
         
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        # p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         # Reset debug camera postion
         p.resetDebugVisualizerCamera(0.7, 0, -40, [-0.05, -0.1, 1])
 
@@ -183,28 +174,19 @@ class CupPour(object):
         self.obj_y_range = self.obj_aabb[1][1] - self.obj_aabb[0][1]
         self.obj_digonal_len = math.sqrt(self.obj_x_range * self.obj_x_range + self.obj_y_range * self.obj_y_range)
         self.indent_len = self.obj_digonal_len / (3 * self.indent_num) # half the length of the diagonal
-        self.content_in_list_se2 = content_in_list_se2
-        # List of spillage at different pouring pos and cup angle
-        self.spill_list = []
-        # List of pivot position at diffrent pouring pos and cup angle
+        self.canonical_cup_angle = np.pi/4
         self.pivot_pos_list = []
-        # The SO(2) angle of principal axis with largest variance
-        self.content_large_var_angle = self.get_PCA_orn()
 
 
     def cup_pour(self, indent=0.01):
         """
         Rotate the cup about the pour_pos.
         """
+        self.spill_list = []
 
-        # # For debug
-        # content_drop_z = self.pour_pos_nominal[2]
-        # for content_drop_pos in self.content_in_list_se2:
-        #     p.loadURDF(self.content_urdf, basePosition=(content_drop_pos[0], content_drop_pos[1], content_drop_z), useFixedBase=True)
-
-        for k in range(self.pour_num):
-        # for k in range(6, 7): # For RAL2020 Figure5
-            planar_angle = self.content_large_var_angle + k / self.pour_num * 2 * np.pi
+        # Ablation study: pouring from a fixed angle
+        for k in range(1, 2):
+            planar_angle = k / self.pour_num * 2 * np.pi
             spill_angle_list = []
             pivot_pos_angle_list = []
 
@@ -214,7 +196,7 @@ class CupPour(object):
                 self.pour_pos = np.zeros(3)
                 self.pour_pos[0] = self.pour_pos_nominal[0] - (indent + j * self.indent_len) * np.cos(planar_angle)
                 self.pour_pos[1] = self.pour_pos_nominal[1] - (indent + j * self.indent_len) * np.sin(planar_angle)
-                self.pour_pos[2] = self.pour_pos_nominal[2]
+                self.pour_pos[2] = self.pour_pos_nominal[2] #+ 0.001
 
                 # Load cup
                 self.cup_id = p.loadURDF(self.cup_urdf)
@@ -222,7 +204,7 @@ class CupPour(object):
                 p.changeDynamics(self.cup_id, -1, mass=1)
                 self.cup_aabb = p.getAABB(self.cup_id)
 
-                # # For debug
+                # For debug
                 # p.loadURDF(self.content_urdf, basePosition=self.pour_pos, useFixedBase=True)
 
                 cup_half_length = self.cup_aabb[1][0] - 0.006
@@ -236,6 +218,8 @@ class CupPour(object):
                 p.resetBasePositionAndOrientation(self.cup_id,
                                                 posObj=self.cup_pos,
                                                 ornObj=p.getQuaternionFromEuler(self.cup_initial_orn))
+
+                # import ipdb; ipdb.set_trace()
 
                 # parentFramePosition: the joint frame pos in the object frame
                 # childFramePosition: the joint frame pos in the world frame if the child frame is set to be -1 (base)
@@ -268,79 +252,15 @@ class CupPour(object):
                         time.sleep(1. / 240.)
                 
                 spill = self.check_spillage()
-
-                # # ICRA 2021 Figure 5
-                # import ipdb; ipdb.set_trace()
-
                 p.removeBody(self.cup_id)
 
                 spill_angle_list.append(spill)
                 pivot_pos_angle_list.append(pivot)
 
-            # # ICRA 2021 Figure 5
-            # for content_id in self.content_id_list:
-            #     p.removeBody(content_id)
-            # marker_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/sphere_minimini.urdf"
-            # p.loadURDF(marker_urdf, basePosition=self.pour_pos_nominal)
-            # p.loadURDF(marker_urdf, basePosition=pivot_pos_angle_list[0])
-            # p.loadURDF(marker_urdf, basePosition=pivot_pos_angle_list[1])
-            # p.loadURDF(marker_urdf, basePosition=pivot_pos_angle_list[2])
-            # import ipdb; ipdb.set_trace()
-
             self.spill_list.append(spill_angle_list)
             self.pivot_pos_list.append(pivot_pos_angle_list)
 
         return self.spill_list
-
-
-    def cup_pour_at(self, imagined_pour_pos, imagined_cup_angle):
-        """
-        Show the configuration of the cup before pouring.
-        For ICRA RA-L 2021 submission.
-        """
-        p.resetDebugVisualizerCamera(0.7, 45, -30, [-0.09, -0.1, 1])
-        planar_angle = imagined_cup_angle
-
-        # Pour position for different angle. Indent is included for x the offset from the nominal pour pos.
-        self.pour_pos = np.zeros(3)
-        self.pour_pos[0] = imagined_pour_pos[0] 
-        self.pour_pos[1] = imagined_pour_pos[1]
-        self.pour_pos[2] = imagined_pour_pos[2] + self.obj_zero_pos[2]
-
-        # Load cup
-        self.cup_id = p.loadURDF(self.cup_urdf)
-        self.cup_pos = np.array([0.0, 0.0, 0.0])
-        p.changeDynamics(self.cup_id, -1, mass=1)
-        self.cup_aabb = p.getAABB(self.cup_id)
-
-        # # For debug
-        # p.loadURDF(self.content_urdf, basePosition=self.pour_pos, useFixedBase=True)
-
-        cup_half_length = self.cup_aabb[1][0] - 0.006
-        pour_pos_offset = - cup_half_length * np.array([np.cos(planar_angle), np.sin(planar_angle)])
-        self.cup_pos[0] = self.pour_pos[0] + pour_pos_offset[0]
-        self.cup_pos[1] = self.pour_pos[1] + pour_pos_offset[1] 
-        self.cup_pos[2] = self.pour_pos[2] + (-self.cup_aabb[0][2] - 0.01) # offset for the tip of the cup
-
-        self.cup_initial_orn = [0, 0, planar_angle]
-
-        p.resetBasePositionAndOrientation(self.cup_id,
-                                        posObj=self.cup_pos,
-                                        ornObj=p.getQuaternionFromEuler(self.cup_initial_orn))
-
-        # parentFramePosition: the joint frame pos in the object frame
-        # childFramePosition: the joint frame pos in the world frame if the child frame is set to be -1 (base)
-        # parentFrameOrientation: the joint frame orn in the object frame
-        # childFrameOrientation: the joint frame orn in the world frame if the child frame is set to be -1 (base)
-        cup_constraint_Id = p.createConstraint(self.cup_id, -1, -1, -1, p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                                                parentFramePosition=[cup_half_length, 0.0, self.pour_pos[2]-self.cup_pos[2]], 
-                                                childFramePosition=self.pour_pos,
-                                                parentFrameOrientation=p.getQuaternionFromEuler([0, 0, 0]),
-                                                childFrameOrientation=p.getQuaternionFromEuler(self.cup_initial_orn))
-
-        self.set_content(planar_angle)
-
-        import ipdb; ipdb.set_trace()
 
 
     def set_content(self, planar_angle):
@@ -395,28 +315,39 @@ class CupPour(object):
         return spill_num
 
 
+    def best_pour_pos_orn_ablation(self):
+        """
+        Calculate the best pouring position and orientation.
+        
+        Return:
+            - pivot_pos: (3, ) numpy array, the pouring position
+            - cup_angle: angle for pouring
+        """
+        # np.pi/4
+        min_spill_num = self.content_num
+
+        spill_angle_list = np.array(self.spill_list[0])
+        spill_angle_min_idx = np.argmin(spill_angle_list)
+
+        pivot_pos = self.pivot_pos_list[0][spill_angle_min_idx] - self.obj_zero_pos # pos in the world frame
+        cup_angle = np.pi/4
+        
+        return pivot_pos, cup_angle
+
+    
     def best_pour_pos_orn(self):
         """
-        Calculate the best pouring position and cup angle.
-        1. Select the pouring position and cup angle based on the spillage.
-        2. Select the cup angle close to the principal axis with largest variance
+        Calculate the best pouring position and orientation.
         
         Return:
             - pivot_pos: (3, ) numpy array, the pouring position
             - cup_angle: angle for pouring
         """
 
-        
-        # Pick the best orn and pos by selecting the pouring orn and pos
-        # with minimum spillage among all the pouring orn and pos
-
         spill_list = np.array(self.spill_list)
         spill_list_angle_sum = np.sum(spill_list, axis=1)
         min_spillage_sum_angle = spill_list_angle_sum.min()
         cup_angle_idx_list = np.where(spill_list_angle_sum == min_spillage_sum_angle)
-
-        # print "cup_angle_idx_list: ", cup_angle_idx_list
-        # print "cup_angle_idx_list[0]: ", cup_angle_idx_list[0]
 
         min_spill_num = self.content_num
         min_spill_angle_idx = None
@@ -427,6 +358,7 @@ class CupPour(object):
             spill_angle_pos_min_idx = np.argmin(spill_angle_list)
 
             if spill_angle_list[spill_angle_pos_min_idx] < min_spill_num:
+                # Pick the one with least spillage
                 min_spill_num = spill_angle_list[spill_angle_pos_min_idx]
                 min_spill_angle_idx = cup_angle_idx
                 min_spill_angle_pos_idx = spill_angle_pos_min_idx
@@ -435,48 +367,14 @@ class CupPour(object):
                 if spill_angle_pos_min_idx < min_spill_angle_pos_idx:
                     min_spill_angle_idx = cup_angle_idx
                     min_spill_angle_pos_idx = spill_angle_pos_min_idx
-                elif spill_angle_pos_min_idx == min_spill_angle_pos_idx:
-                    # Pick the one closest to the principal axis
-                    if min(cup_angle_idx, abs(cup_angle_idx - self.pour_num/2)) < min(min_spill_angle_idx, abs(min_spill_angle_idx - self.pour_num/2)):
-                        min_spill_angle_idx = cup_angle_idx
-                        min_spill_angle_pos_idx = spill_angle_pos_min_idx
-
-        print "min_spill_angle_idx: ", min_spill_angle_idx
-        print "min_spill_angle_pos_idx: ", min_spill_angle_pos_idx
 
         pivot_pos = self.pivot_pos_list[min_spill_angle_idx][min_spill_angle_pos_idx] - self.obj_zero_pos
-        cup_angle = self.content_large_var_angle + min_spill_angle_idx * np.pi/4
-                
+        cup_angle = min_spill_angle_idx * np.pi/4
+
         if cup_angle > np.pi:
             cup_angle -= 2*np.pi
-
-        print "self.pivot_pos_list"
-        print self.pivot_pos_list
-        print "Best pour cup angle"
-        print cup_angle
-        print "Best pour pivot pos"
-        print pivot_pos
         
         return pivot_pos, cup_angle
-
-
-    def get_PCA_orn(self):
-        """
-        Compute the PCA of a list of content dropped in the container.
-
-        Args:
-            - content_in_list (nx3 np array)
-        Returns:
-            - SO(2) orientation corresponding to the largest variance
-        """
-        pca = PCA(n_components=2)
-        pca.fit(self.content_in_list_se2)
-        
-        large_var_axis = pca.components_[0]
-        content_large_var_angle = np.arctan2(large_var_axis[1], large_var_axis[0])
-        
-        print "PCA orn angle: ", content_large_var_angle
-        return content_large_var_angle
 
 
     def disconnect_p(self):
@@ -491,10 +389,18 @@ if __name__ == "__main__":
     pour_pos = np.array([-0.11286258922851207, -0.28667539144459603, 0.14344400513172162])
     mp4_dir = "/home/hongtao/Desktop"
     obj_name = "Amazon_Name_Card_Holder"
-    CP = CupPour(cup_urdf, content_urdf, obj_urdf, pour_pos, obj_zero_pos=[0, 0, 1], indent_num=3,
+    BP = CupPour(cup_urdf, content_urdf, obj_urdf, pour_pos, obj_zero_pos=[0, 0, 1], indent_num=3,
                     check_process=False)#, mp4_dir=mp4_dir, object_name=obj_name)
 
+    spill_list = BP.cup_pour()
+    # print "spill list"
+    # print spill_list
+    # print "pivot_pos_list"
+    # print BP.pivot_pos_list
 
+    pivot_pos, cup_angle = BP.best_pour_pos_orn()
+    # print "pivot position: ", pivot_pos
+    # print "cup angle: ", cup_angle
     BP.disconnect_p()
 
 
