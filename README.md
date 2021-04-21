@@ -1,40 +1,66 @@
 # Container Imagination
-This repository is for the imagination of cup with real robots.
+**Can I Pour into it? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations (RA-L with ICRA 2021)**
+
+[Hongtao Wu](https://hongtaowu67.github.io/), [Gregory Chirikjian](https://me.jhu.edu/faculty/gregory-s-chirikjian/)
+
+Container Imagination is a method to enable robot to imagine the containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
+
+* [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
+* [Paper on arxiv](https://arxiv.org/abs/2008.02321)
+* [Project Page & Video Results](https://chirikjianlab.github.io/realcontainerimagination/)
+
+If you have any questions or find any bugs, please let me know: hwu67[at]jhu[dot]edu
+
+- [ ] Need to add video
+
+
+# Abstract
+Open containers, i.e., containers without covers, are an important and ubiquitous class of objects in human life. We propose a novel method for robots to "imagine" the open containability affordance of a previously unseen object via physical simulations. We implement our imagination method on a UR5 manipulator. The robot autonomously scans the object with an RGB-D camera. The scanned 3D model is used for open containability imagination which quantifies the open containability affordance by physically simulating dropping particles onto the object and counting how many particles are retained in it. This quantification is used for open-container vs. non-open-container binary classification. If the object is classified as an open container, the robot further imagines pouring into the object, again using physical simulations, to obtain the pouring position and orientation for real robot autonomous pouring. We evaluate our method on open container classification and autonomous pouring of granular material on a dataset containing 130 previously unseen objects with 57 object categories. Although our proposed method uses only 11 objects for simulation calibration (training), its open container classification aligns well with human judgements. In addition, our method endows the robot with the capability to autonomously pour into the 55 containers in the dataset with a very high success rate.
+
+# Citation
+If you find this code useful in your work, please consider citing
+```
+@article{wu2020can,
+  title={Can I Pour Into It? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations},
+  author={Wu, Hongtao and Chirikjian, Gregory S},
+  journal={IEEE Robotics and Automation Letters},
+  volume={6},
+  number={1},
+  pages={271--278},
+  year={2020},
+  publisher={IEEE}
+}
+
+```
 
 # Installation
-The project has been tested on python 2.7.
+The project has been tested on Ubuntu 16.04 with python 2.7. We are working on transfering the code to python 3 on later version of Ubuntu release.
 
-Pybullet
-
-[TSDF Fusion](https://github.com/andyzeng/tsdf-fusion): Need to compile this code.
+* Pybullet
+    This is the simulation engine used for the robot imagination. It can be installed by
+    ```
+    pip install pybullet
+    ```
+* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu)
+    This package is for reconstructing the 3D mesh from the depth images capture from the depth camera. Please follow the instruction in the repo to compile the package.
 
 
 # Module
-## Camera Calibration
-We provide a simple calibration process for hand-eye calibration. The calibration is an eye-on-hand calibration (see more explanation [here](https://github.com/jaydenwu17/camera_calibration)). The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to 20 pre-defined configurations and record the robot's end-effector pose and the ArUco tag pose for calibration. The robot's end-effector pose in w.r.t. to the robot base frame. The ArUco tag pose is w.r.t. the camera frame.
 
-Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/jaydenwu17/camera_calibration)).
+## Camera Calibration
+We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calirbation target.
+
+Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/hongtaowu67/engineering_note)).
 
 In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
 
-### Instruction
-1. Print an ArUco Tag from [here](http://chev.me/arucogen/). Mark down the marker ID and the dictionary it belongs to. Also, measure the marker size (in meter).
+## Object Scanning
 
-2. Roslaunch the camera:
-```shell
-roslaunch openni2_launch openni2.launch
-```
-3. Roslaunch the aruco_ros:
-```shell
-roslaunch aruco_ros single.launch markerId:=<marker ID> markerSize:=<marker size in meter>
-```
+## Containability Imagination
 
-4. Move the robot to 20 configurations. Use the following to make sure that the marker is detected:
-```shell
-rosrun image_view image_view image:=/aruco_single/result
-```
+## Pouring Imagination
 
-### Real Robot Experiment
+## Real Robot Experiment
 TODO: Calibration (can test the chessboard calibration method)
 
 The real robot experiment use *containability_3_1.py* to imagine the containability (**not tested yet**). To run the real robot experiment, run
@@ -43,7 +69,7 @@ python main.py
 ```
 Specify the data directory (directory to save the data), the content urdf and the data name in *main.py*. A directory with the object name will be created in the data directory. The RGB images, depth images, scanned 3D model file (obj), object urdf file, open containability imagination visualization (mp4), and the containability imagination results (txt) will be saved in this directory. 
 
-### Containability Imagination Benchmark
+## Containability Imagination Benchmark
 The objects are saved in `test_set_all/` which contains 99 objects at the moment. To run the containability imagination benchmark, run
 ```shell
 python containability_imagination.py
