@@ -21,7 +21,7 @@ from datetime import date
 import numpy as np
 
 # from capture_view_pick import AutoCapture
-from tsdf_fusion_segmentation import run_tsdf_fusion_cuda, segment_tsdf_fast
+from processing.tsdf_fusion import run_tsdf_fusion, tsdf_fusion_postprocess
 from processing.process import run_vhacd, write_urdf
 from containability.containability_3_1 import Containability
 from pour.pouring_3_pca import CupPour
@@ -34,7 +34,6 @@ pouring = True
 
 data_root_dir = "/home/hongtao/Dropbox/ICRA2021/paper/introductory_video"
 
-
 start_time = time.time()
 
 root_dir = os.getcwd()
@@ -44,44 +43,45 @@ if not os.path.exists(data_folder):
     os.mkdir(data_folder)
     os.mkdir(os.path.join(data_folder, 'rgbd'))
 
-# Extrinsic camera calibration file    
+# Extrinsic camera calibration file
 cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
-
 ############### Capture views of the object #################
-# AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'), 
+# AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'),
 #                     acc=1.0, vel=1.0, cam2ee_file=cam2ee_file)
 # AC.collect_data()
 
 autocapture_time = time.time() - start_time
 #############################################################
 
-
 ######## 3D reconstruct the object with TSDF Fusion #########
 tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/TSDFfusion')
 
 # TSDF Fusion
 image_folder = os.path.join(data_root_dir, data_name, 'rgbd')
-camera_intrinsics_file = os.path.join(root_dir, "calibrate/camera-intrinsics.txt")
-# run_tsdf_fusion_cuda(tsdf_fusion_dir, image_folder, camera_intrinsics_file, 
+camera_intrinsics_file = os.path.join(root_dir,
+                                      "calibrate/camera-intrinsics.txt")
+# run_tsdf_fusion(tsdf_fusion_dir, image_folder, camera_intrinsics_file,
 #     voxel_grid_origin_x=-0.3, voxel_grid_origin_y=-0.55, voxel_grid_origin_z=0.03, fast_tsdf_settings=True)
 
 # Segementation
 tsdf_bin_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.bin')
 tsdf_ply_file = os.path.join(data_root_dir, data_name, 'rgbd/tsdf.ply')
-ply_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_point')
-obj_mesh_output_prefix = os.path.join(data_root_dir, data_name, data_name + '_mesh')
-# segment_tsdf_fast(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
+ply_output_prefix = os.path.join(data_root_dir, data_name,
+                                 data_name + '_point')
+obj_mesh_output_prefix = os.path.join(data_root_dir, data_name,
+                                      data_name + '_mesh')
+# tsdf_fusion_postprocess(tsdf_bin_file, tsdf_ply_file, ply_output_prefix, obj_mesh_output_prefix)
 ##############################################################
-
 
 ##################### VHACD processing #######################
 object_name = data_name + "_mesh_0"
 
 # VHACD
 vhacd_dir = os.path.join(root_dir, 'processing')
-input_file = os.path.join(data_root_dir, data_name, object_name + '.obj') 
-output_file = os.path.join(data_root_dir, data_name, object_name + '_vhacd.obj')
+input_file = os.path.join(data_root_dir, data_name, object_name + '.obj')
+output_file = os.path.join(data_root_dir, data_name,
+                           object_name + '_vhacd.obj')
 # run_vhacd(vhacd_dir, input_file, output_file)
 
 # URDF file
@@ -93,7 +93,6 @@ obj_vhacd_file = object_name + '_vhacd.obj'
 preprocessing_time = time.time() - start_time - autocapture_time
 ##############################################################
 
-
 ################# Containability Imagination #################
 # print "Start containability imagination..."
 obj_vhacd_path = os.path.join(data_root_dir, data_name, obj_vhacd_file)
@@ -101,8 +100,14 @@ obj_vhacd_path = os.path.join(data_root_dir, data_name, obj_vhacd_file)
 mp4_dir = os.path.join(data_root_dir, data_name)
 print('URDF: ', obj_urdf)
 
-C = Containability(obj_urdf, obj_vhacd_path, obj_zero_pos=[0, 0, 1], obj_zero_orn=[0, 0, 0], 
-        check_process=False, mp4_dir=mp4_dir, object_name=object_name, content_urdf=content_urdf)
+C = Containability(obj_urdf,
+                   obj_vhacd_path,
+                   obj_zero_pos=[0, 0, 1],
+                   obj_zero_orn=[0, 0, 0],
+                   check_process=False,
+                   mp4_dir=mp4_dir,
+                   object_name=object_name,
+                   content_urdf=content_urdf)
 
 containability_affordance, sphere_in_percentage = C.get_containability()
 C.visualize_footprint()
@@ -116,17 +121,26 @@ if containability_affordance:
 else:
     drop_spot = [np.nan, np.nan, np.nan]
 
-containability_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time
+containability_imagination_time = time.time(
+) - start_time - autocapture_time - preprocessing_time
 #################################################################
-
 
 ################### Pouring Imagination ######################
 if pouring:
     if containability_affordance:
         # print "Start pouring imagination..."
         sphere_in_list_se2 = sphere_in_list[:, :2]
-        CP = CupPour(cup_urdf, content_urdf, obj_urdf, drop_spot, sphere_in_list_se2, indent_num=3, content_num=60,
-                        obj_zero_pos=[0, 0, 1], check_process=True, mp4_dir=None, object_name=object_name)
+        CP = CupPour(cup_urdf,
+                     content_urdf,
+                     obj_urdf,
+                     drop_spot,
+                     sphere_in_list_se2,
+                     indent_num=3,
+                     content_num=60,
+                     obj_zero_pos=[0, 0, 1],
+                     check_process=True,
+                     mp4_dir=None,
+                     object_name=object_name)
         # spill_list = CP.cup_pour()
         # print ("Spill List: {}".format(spill_list))
 
@@ -138,11 +152,14 @@ if pouring:
         CP.cup_pour_at(imagined_pour_pos, imagined_cup_angle)
         CP.disconnect_p()
     else:
-        spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan],[np.nan, np.nan, np.nan]]
+        spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
+                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
+                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
+                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
 
-pouring_imagination_time = time.time() - start_time - autocapture_time - preprocessing_time - containability_imagination_time
+pouring_imagination_time = time.time(
+) - start_time - autocapture_time - preprocessing_time - containability_imagination_time
 #############################################################
-
 
 # ###############################################################
 # result_txt_name = os.path.join(data_folder, data_name + ".txt")
@@ -164,7 +181,6 @@ pouring_imagination_time = time.time() - start_time - autocapture_time - preproc
 #     # file1.write("Pouring time: " + str(pouring_time) + "\n")
 #     file1.write("Object url: \n")
 # ###############################################################
-
 '''
 # ################## Real Robot Pouring #####################
 # if pouring:
