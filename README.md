@@ -30,40 +30,56 @@ If you find this code useful in your work, please consider citing
   year={2020},
   publisher={IEEE}
 }
-
 ```
 
-# Installation
+# Dependence
 The project has been tested on Ubuntu 16.04 with python 2.7. We are working on transfering the code to python 3 on later version of Ubuntu release.
 
-* Pybullet
-    This is the simulation engine used for the robot imagination. It can be installed by
+* Pybullet: Simulation engine used for the robot imagination. It can be installed by
     ```
     pip install pybullet
     ```
-* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu)
-    This package is for reconstructing the 3D mesh from the depth images capture from the depth camera. Please follow the instruction in the repo to compile the package.
+* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. Please follow the instruction in the [TSDFfusion-cpu repo]((https://github.com/hongtaowu67/TSDFfusion-cpu)) to compile the package.
+* [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html#install-python-pcl): PCL function to work with point clouds. It is a python wrapper of the PCL library.
+  ```
+  pip install python-pcl
+  ```
+* [V-HACD](https://github.com/kmammou/v-hacd): Convex decomposition of the mesh for pybullet simulation.
+  ```
+  git clone https://github.com/kmammou/v-hacd
+  cd v-hacd/
+  mkdir build && cd build
+  cmake ..
+  make -j8
+  ```
+* scikit-learn: PCA function in the pouring imagination
+  ```
+  pip install scikit-learn
+  ```
 
 
 # Module
-
-## Camera Calibration
-We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calirbation target.
-
-Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/hongtaowu67/engineering_note)).
-
-In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
-
-## Object Scanning
 
 ## Containability Imagination
 
 ## Pouring Imagination
 
 ## Real Robot Experiment
-TODO: Calibration (can test the chessboard calibration method)
 
-The real robot experiment use *containability_3_1.py* to imagine the containability (**not tested yet**). To run the real robot experiment, run
+### Camera Calibration
+We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calirbation target.
+
+Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/hongtaowu67/engineering_note)).
+
+In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
+
+### Robot Object Scanning
+
+### TSDF Fusion
+
+### V-HACD convex decomposition
+
+The real robot experiment use *containability_3_1.py* to imagine the containability. To run the real robot experiment, run
 ```shell
 python main.py
 ```
@@ -87,3 +103,16 @@ To benchmark the result with human annotation, run
 python benchmark_human.py
 ```
 Specify the data directory of the imagination result txt, annotation data directory, and the corresponding annotation files in *benchmark_human.py*. The imagination result (containability and/or pouring) will be displayed.
+
+## Related papers
+These are the related paper to the robot imagination project our group is working on. Please take a look!
+
+* Is That a Chair? Imagining Affordances Using Simulations of an Articulated Human Body [[arxiv](https://arxiv.org/abs/1909.07572)] [[project page](https://chirikjianlab.github.io/chairimagination/)]
+
+For more information about our group, please visit our website at: [https://chirikjianlab.github.io/](https://chirikjianlab.github.io/)
+
+## TODO
+- [ ] add support on how to install TSDF Fusion and V-HACD
+- [ ] move the TSDF and V-HCAD away from main_imagination
+- [ ] look into the containability and pouring imagination code and add comments
+- [ ] work on code for real robot experiments
