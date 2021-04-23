@@ -20,8 +20,8 @@ import numpy as np
 from capture_view_pick import AutoCapture
 from processing.tsdf_fusion import run_tsdf_fusion, tsdf_fusion_postprocess
 from processing.process import run_vhacd, write_urdf
-from containability.containability_3_1 import Containability
-from pour.pouring_3_pca_ablation import CupPour
+from containability import Containability
+from pour.pouring_ablation import CupPour
 from pick_and_pour_3 import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
