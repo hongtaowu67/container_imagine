@@ -3,13 +3,13 @@
 
 [Hongtao Wu](https://hongtaowu67.github.io/), [Gregory Chirikjian](https://me.jhu.edu/faculty/gregory-s-chirikjian/)
 
-Container Imagination is a method to enable robot to imagine the containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
+Container Imagination is a method to enable robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
 
 * [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
 * [Paper on arxiv](https://arxiv.org/abs/2008.02321)
 * [Project Page & Video Results](https://chirikjianlab.github.io/realcontainerimagination/)
 
-If you have any questions or find any bugs, please let me know: hwu67[at]jhu[dot]edu
+If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
 - [ ] Need to add video
 
@@ -32,9 +32,11 @@ If you find this code useful in your work, please consider citing
 }
 ```
 
-# Dependence
+# Dependency
 The project has been tested on Ubuntu 16.04 with python 2.7. We are working on transfering the code to python 3 on later version of Ubuntu release.
 
+## Imagination
+If you only need the imagination module, please install the following packages.
 * Pybullet: Simulation engine used for the robot imagination. It can be installed by
     ```
     pip install pybullet
@@ -52,17 +54,24 @@ The project has been tested on Ubuntu 16.04 with python 2.7. We are working on t
   cmake ..
   make -j8
   ```
-* scikit-learn: PCA function in the pouring imagination
+* scikit-learn: Principal Component Analysis (PCA) for the pouring imagination
   ```
   pip install scikit-learn
   ```
-
+## Real Robot Experiment
+If you want to include the real robot experiments (e.g., robot scanning and robot pouring), please also install the following packages. The experiment has only been tested on a UR5 robot.
 
 # Module
 
-## Containability Imagination
+## Imagination
+The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is *main_imagination.py*.
+```
+python main_imagination.py <data_root_dir> <data_name> <object_name> <pour> 
+```
 
-## Pouring Imagination
+- [ ] Add file structure to run the script
+- [ ] Add figures about imagination
+- [ ] Add arg for running the code
 
 ## Real Robot Experiment
 
@@ -79,7 +88,7 @@ In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
 
 ### V-HACD convex decomposition
 
-The real robot experiment use *containability_3_1.py* to imagine the containability. To run the real robot experiment, run
+The real robot experiment use *containability.py* to imagine the containability. To run the real robot experiment, run
 ```shell
 python main.py
 ```
@@ -104,8 +113,8 @@ python benchmark_human.py
 ```
 Specify the data directory of the imagination result txt, annotation data directory, and the corresponding annotation files in *benchmark_human.py*. The imagination result (containability and/or pouring) will be displayed.
 
-## Related papers
-These are the related paper to the robot imagination project our group is working on. Please take a look!
+## Related Work
+These are the related papers on the robot imagination project our group is working on. Please take a look!
 
 * Is That a Chair? Imagining Affordances Using Simulations of an Articulated Human Body [[arxiv](https://arxiv.org/abs/1909.07572)] [[project page](https://chirikjianlab.github.io/chairimagination/)]
 
@@ -114,5 +123,5 @@ For more information about our group, please visit our website at: [https://chir
 ## TODO
 - [ ] add support on how to install TSDF Fusion and V-HACD
 - [ ] move the TSDF and V-HCAD away from main_imagination
-- [ ] look into the containability and pouring imagination code and add comments
+- [ ] look into pouring imagination code and add comments
 - [ ] work on code for real robot experiments
