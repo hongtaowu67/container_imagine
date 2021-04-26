@@ -15,10 +15,6 @@ import os
 import math
 import trimesh
 
-root_dir = os.getcwd()
-red_sphere_urdf = os.path.join(root_dir, "object", "m&m_red.urdf")
-sphere_urdf = os.path.join(root_dir, "object", "m&m.urdf")
-
 
 class Containability(object):
     """
@@ -27,6 +23,7 @@ class Containability(object):
     def __init__(self,
                  obj_urdf,
                  obj_vhacd_mesh,
+                 content_urdf,
                  rotate=True,
                  translate=True,
                  friction=True,
@@ -35,13 +32,14 @@ class Containability(object):
                  obj_zero_orn=[0, 0, 0],
                  check_process=False,
                  mp4_dir=None,
-                 object_name=None,
-                 content_urdf=sphere_urdf):
+                 object_name=None):
         """
         @type  obj_urdf: string
         @param obj_urdf: object urdf file path
         @type  obj_vhacd_mesh: string
         @param obj_vhacd_mesh: object vhacd convex decomposed file path
+        @type  content_urdf: string
+        @param content_urdf: urdf of the content
         @type  rotate: bool
         @param rotate: whether to include rotation perturbation
         @type  translate: bool
@@ -62,8 +60,6 @@ class Containability(object):
         @type  object_name: string
         @param object_name: name of the object. Note it is not the data name. A data is about a single take of
             the scene. A data can have many object in the scene
-        @type  content_urdf: string
-        @param content_urdf: urdf of the content
         """
 
         # Hyperparameter
@@ -336,7 +332,8 @@ class Containability(object):
         pivot = self.obj_com_zero
 
         if (self.rotate) and (self.translate):
-            print("Both rotation and translation perturbations are active...")
+            print(
+                "Both rotation and translation perturbations are activated...")
             for i in range(self.simulation_iteration):
 
                 p.stepSimulation()
@@ -388,7 +385,7 @@ class Containability(object):
                     p.setGravity(0.0, -0.5, -9.81)
 
         elif (not self.rotate) and (self.translate):
-            print("Only translation perturbation is active...")
+            print("Only translation perturbation is activated...")
             for i in range(self.simulation_iteration):
                 p.stepSimulation()
 
@@ -413,7 +410,7 @@ class Containability(object):
                     p.setGravity(0.0, -0.5, -9.81)
 
         elif (self.rotate) and (not self.translate):
-            print("Only rotation perturbation is active...")
+            print("Only rotation perturbation is activated...")
             for i in range(self.simulation_iteration):
                 p.stepSimulation()
 
@@ -447,7 +444,7 @@ class Containability(object):
                                        maxForce=50)
 
         elif (not self.rotate) and (not self.translate):
-            print("No perturbations are active...")
+            print("No perturbations are activated...")
             for i in range(self.simulation_iteration):
                 p.stepSimulation()
 
@@ -503,7 +500,7 @@ class Containability(object):
 
             return drop_center_original_frame
 
-    def visualize_footprint(self):
+    def visualize_footprint(self, sphere_urdf, marker_sphere_urdf):
         """ 
         Visualize the footprint of an object 
         """
@@ -515,7 +512,7 @@ class Containability(object):
         # load sphere
         for idx, pos in enumerate(self.sphere_drop_pos):
             if idx in self.sphere_in_id:
-                p.loadURDF(red_sphere_urdf, basePosition=pos)
+                p.loadURDF(marker_sphere_urdf, basePosition=pos)
             else:
                 p.loadURDF(sphere_urdf, basePosition=pos)
 
