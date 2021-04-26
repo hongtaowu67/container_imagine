@@ -37,14 +37,13 @@ The project has been tested on Ubuntu 16.04 with python 2.7. We are working on t
 
 ## Imagination
 If you only need the imagination module, please install the following packages.
-* Pybullet: Simulation engine used for the robot imagination. It can be installed by
+* [Pybullet](https://pybullet.org/wordpress/): Simulation engine used for the robot imagination. It can be installed by
     ```
     pip install pybullet
     ```
-* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. Please follow the instruction in the [TSDFfusion-cpu repo]((https://github.com/hongtaowu67/TSDFfusion-cpu)) to compile the package.
-* [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html#install-python-pcl): PCL function to work with point clouds. It is a python wrapper of the PCL library.
+* scikit-learn: Principal Component Analysis (PCA) for the pouring imagination
   ```
-  pip install python-pcl
+  pip install scikit-learn
   ```
 * [V-HACD](https://github.com/kmammou/v-hacd): Convex decomposition of the mesh for pybullet simulation.
   ```
@@ -54,24 +53,54 @@ If you only need the imagination module, please install the following packages.
   cmake ..
   make -j8
   ```
-* scikit-learn: Principal Component Analysis (PCA) for the pouring imagination
+* ffmpeg: Saving the video of the imagination process
   ```
-  pip install scikit-learn
+  sudo apt install ffmpeg
   ```
+
 ## Real Robot Experiment
-If you want to include the real robot experiments (e.g., robot scanning and robot pouring), please also install the following packages. The experiment has only been tested on a UR5 robot.
+If you want to include the real robot experiments (e.g., robot scanning and robot pouring), please also install the following packages. The experiment has been tested on a UR5 robot.
+* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. Please follow the instruction in the [TSDFfusion-cpu repo]((https://github.com/hongtaowu67/TSDFfusion-cpu)) to compile the package.
+* [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html#install-python-pcl): PCL function to work with point clouds. It is a python wrapper of the PCL library.
+  ```
+  pip install python-pcl
+  ```
+* [python-urx](https://github.com/SintefManufacturing/python-urx): a handful python wrapper to interact with UR robots
+  ```
+  pip install urx
+  ```
+
 
 # Module
 
 ## Imagination
 The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is *main_imagination.py*.
 ```
-python main_imagination.py <data_root_dir> <data_name> <object_name> <pour> 
+python main_imagination.py <root_dir> <data_dir> <data_name> <mesh_name> [-p] [-v] [-m] 
+```
+- root_dir: root directory of the code
+- data_dir: root directory of the data
+- data_name: name of the data in data_dir. Note that a data represent a capture of a scene. There may be more than one object in the scene.
+- mesh_name: name of the mesh / object for imagination
+- [-p]: if set as True, pouring imagination will be activated
+- [-v]: if set as True, visualization of the imagination will be activated
+- [-m]: if a directory is given, the video of the imagination will be saved thereof. Note that this needs to used with the [-v] option. The video name of the containabiliy imagination is object_name_contain.mp4 the video name of the pouring imagination is object_name_pour.mp4
+
+An example argument is given as follows:
+```
+python main_imagination.py <root_dir> Amazon_Accessory_Tray_pour_pca_mesh_0 -p True -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
+```
+The directory for the data should be structured as follows:
+```bash
+├── data_dir
+│   ├── data_name_0
+│   │   ├── object_name_0.obj
+│   │   ├── object_name_0_vhacd.obj
+│   │   ├── object_name_0.urdf
+...
 ```
 
-- [ ] Add file structure to run the script
 - [ ] Add figures about imagination
-- [ ] Add arg for running the code
 
 ## Real Robot Experiment
 
