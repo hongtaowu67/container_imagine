@@ -1,7 +1,7 @@
 # Container Imagination
 __Can I Pour into it? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations (RA-L with ICRA 2021)__
 
-__*Best Paper Finalist in Human-Robot Interaction*__
+:star:__*Best Paper Finalist in Human-Robot Interaction of ICRA 2021*__:star:
 
 [Hongtao Wu](https://hongtaowu67.github.io/), [Gregory Chirikjian](https://me.jhu.edu/faculty/gregory-s-chirikjian/)
 
