@@ -11,7 +11,8 @@ Container Imagination is a method to enable robot to imagine the open containabi
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
-- [ ] Need to add video
+Click the image to watch the video:
+[![introductory video](doc/thumbnail0.png)](https://youtu.be/n6dGRaLTv88)
 
 
 # Abstract
@@ -37,7 +38,7 @@ The project has been tested on Ubuntu 16.04 with python 2.7. We are working on t
 
 ## Imagination
 If you only need the imagination module, please install the following packages.
-* [Pybullet](https://pybullet.org/wordpress/): Simulation engine used for the robot imagination. It can be installed by
+* [Pybullet](https://pybullet.org/wordpress/): the simulation engine used for the robot imagination. It can be installed by
     ```
     pip install pybullet
     ```
@@ -45,7 +46,7 @@ If you only need the imagination module, please install the following packages.
   ```
   pip install scikit-learn
   ```
-* [V-HACD](https://github.com/kmammou/v-hacd): Convex decomposition of the mesh for pybullet simulation.
+* [V-HACD](https://github.com/kmammou/v-hacd): convex decomposition of the mesh for pybullet simulation.
   ```
   git clone https://github.com/kmammou/v-hacd
   cd v-hacd/
@@ -53,7 +54,7 @@ If you only need the imagination module, please install the following packages.
   cmake ..
   make -j8
   ```
-* ffmpeg: Saving the video of the imagination process
+* ffmpeg: for saving the video of the imagination process.
   ```
   sudo apt install ffmpeg
   ```
@@ -65,7 +66,7 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
   ```
   pip install python-pcl
   ```
-* [python-urx](https://github.com/SintefManufacturing/python-urx): a handful python wrapper to interact with UR robots
+* [python-urx](https://github.com/SintefManufacturing/python-urx): a handful python wrapper to interact with UR robots.
   ```
   pip install urx
   ```
@@ -88,9 +89,9 @@ python main_imagination.py <root_dir> <data_dir> <data_name> <mesh_name> [-p] [-
 
 An example argument is given as follows:
 ```
-python main_imagination.py <root_dir> Amazon_Accessory_Tray_pour_pca_mesh_0 -p True -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
+python main_imagination.py <root_dir> <root_dir>/data Amazon_Accessory_Tray_pour_pca_mesh_0 -p True -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
 ```
-The directory for the data should be structured as follows:
+The directory of the data should be structured as follows:
 ```bash
 ├── data_dir
 │   ├── data_name_0
@@ -100,7 +101,7 @@ The directory for the data should be structured as follows:
 ...
 ```
 
-- [ ] Add figures about imagination
+- [ ] Add videos about imagination
 
 ## Real Robot Experiment
 
