@@ -11,7 +11,7 @@ Container Imagination is a method to enable robot to imagine the open containabi
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
-Click the image to watch the video:
+The following image shows the pipline of our method. Click the image to watch the introductory video:
 [![introductory video](doc/thumbnail0.png)](https://youtu.be/n6dGRaLTv88)
 
 
