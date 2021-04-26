@@ -1,18 +1,20 @@
 # Container Imagination
-**Can I Pour into it? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations (RA-L with ICRA 2021)**
+__Can I Pour into it? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations (RA-L with ICRA 2021) [*Best Paper Finalist in Human-Robot Interaction*]__
 
 [Hongtao Wu](https://hongtaowu67.github.io/), [Gregory Chirikjian](https://me.jhu.edu/faculty/gregory-s-chirikjian/)
 
 Container Imagination is a method to enable robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
 
+* [Introductory video](https://youtu.be/n6dGRaLTv88)
 * [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
 * [Paper on arxiv](https://arxiv.org/abs/2008.02321)
 * [Project Page & Video Results](https://chirikjianlab.github.io/realcontainerimagination/)
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
-The following image shows the pipline of our method. Click the image to watch the introductory video:
-[![introductory video](doc/thumbnail0.png)](https://youtu.be/n6dGRaLTv88)
+<p align="center">
+<img src="doc/teaser.gif" width=100% alt="Drawing">
+</p>
 
 
 # Abstract
