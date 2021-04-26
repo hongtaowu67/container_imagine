@@ -7,6 +7,10 @@ __Can I Pour into it? Robot Imagining Open Containability Affordance of Previous
 
 Container Imagination is a method to enable robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
 
+<p align="center">
+<img src="doc/teaser.gif" width=80% alt="Drawing">
+</p>
+
 * [Introductory video](https://youtu.be/n6dGRaLTv88)
 * [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
 * [Paper on arxiv](https://arxiv.org/abs/2008.02321)
@@ -14,9 +18,8 @@ Container Imagination is a method to enable robot to imagine the open containabi
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
-<p align="center">
-<img src="doc/teaser.gif" width=100% alt="Drawing">
-</p>
+Click the image to watch the video:
+[![introductory video](doc/thumbnail0.png)](https://youtu.be/n6dGRaLTv88)
 
 
 # Abstract
