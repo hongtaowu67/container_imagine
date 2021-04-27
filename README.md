@@ -84,8 +84,8 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
 ## Imagination
 <p align="center">
 <img src="doc/imagine_object.png" height=50% alt="Ash Tray">
-<img src="doc/contain_imagine.png" height=50% alt="Containability Imagination">
-<img src="doc/pouring_imagine.png" height=50% alt="Pouring Imagination">
+<img src="doc/contain_imagine.gif" height=50% alt="Containability Imagination">
+<img src="doc/pouring_imagine.gif" height=50% alt="Pouring Imagination">
 </p>
 
 The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is *main_imagination.py*.
