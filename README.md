@@ -8,7 +8,7 @@ __Can I Pour into it? Robot Imagining Open Containability Affordance of Previous
 Container Imagination is a method to enable robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
 
 <p align="center">
-<img src="doc/teaser.gif" width=80% alt="Drawing">
+<img src="doc/teaser.gif" width=100% alt="Drawing">
 </p>
 
 * [Introductory video](https://youtu.be/n6dGRaLTv88)
@@ -82,6 +82,8 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
 # Module
 
 ## Imagination
+![](doc/imagine_object.png) | ![](doc/contain_imagine.gif) | ![](doc/pouring_imagine.git)
+
 The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is *main_imagination.py*.
 ```
 python main_imagination.py <root_dir> <data_dir> <data_name> <mesh_name> [-p] [-v] [-m] 
@@ -107,8 +109,6 @@ The directory of the data should be structured as follows:
 │   │   ├── object_name_0.urdf
 ...
 ```
-
-- [ ] Add videos about imagination
 
 ## Real Robot Experiment
 
