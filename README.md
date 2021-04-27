@@ -82,7 +82,7 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
 # Module
 
 ## Imagination
-<p align="center">
+<p float="left">
 <img src="doc/imagine_object.png" height=50% alt="Ash Tray">
 <img src="doc/contain_imagine.gif" height=50% alt="Containability Imagination">
 <img src="doc/pouring_imagine.gif" height=50% alt="Pouring Imagination">
