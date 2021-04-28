@@ -120,7 +120,7 @@ In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robo
 ### Camera Calibration
 We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
 
-Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note)).
+Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note).
 
 ### Robot 3D Scanning
 <p align="center">
