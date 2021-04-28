@@ -1,15 +1,14 @@
-"""
-Real Object Containability Imagination:
-    1. Capture views of the object
-    2. Reconstruct the object with TSDF fusion
-    3. Process the object with VHACD for convex decomposition
-    4. Containability imagination
-    5. Pouring imagination
-    5. Pour beads into the object with a cup
+# Main script for containability magination with real robot experiments:
+#     1. Capture views of the object
+#     2. Reconstruct the object with TSDF fusion
+#     3. Process the object with VHACD for convex decomposition
+#     4. Containability imagination
+#     5. Pouring imagination
+#     5. Pour beads into the object with a cup
 
-Author: Hongtao Wu
-June 10, 2020
-"""
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: June 10, 2020
 
 import os
 import time
@@ -17,12 +16,12 @@ from datetime import date
 
 import numpy as np
 
-from capture_view_pick import AutoCapture
+from capture_view import AutoCapture
 from processing.tsdf_fusion import run_tsdf_fusion, tsdf_fusion_postprocess
 from processing.process import run_vhacd, write_urdf
 from containability import Containability
-from pour.pouring import CupPour
-from pick_and_pour_3 import PickAndPour
+from pouring import CupPour
+from pick_and_pour import PickAndPour
 
 cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
