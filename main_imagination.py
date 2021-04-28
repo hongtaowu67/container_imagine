@@ -21,7 +21,7 @@ from datetime import date
 import numpy as np
 
 from containability import Containability
-from pour.pouring import CupPour
+from pouring import CupPour
 
 parser = argparse.ArgumentParser(description="Open containability imagination")
 parser.add_argument("root_dir",

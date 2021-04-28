@@ -10,7 +10,7 @@ import time
 import csv
 import numpy as np
 from containability import Containability
-from pour.pouring import CupPour
+from pouring import CupPour
 
 content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
 obj_dir = "/home/hongtao/Dropbox/ICRA2021/data/test_set_containability"
