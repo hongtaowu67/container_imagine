@@ -49,10 +49,12 @@ If you only need the imagination module, please install the following packages.
     ```
     pip install pybullet
     ```
+    
 * scikit-learn: Principal Component Analysis (PCA) for the pouring imagination
   ```
   pip install scikit-learn
   ```
+
 * [V-HACD](https://github.com/kmammou/v-hacd): convex decomposition of the mesh for pybullet simulation.
   ```
   git clone https://github.com/kmammou/v-hacd
@@ -61,6 +63,7 @@ If you only need the imagination module, please install the following packages.
   cmake ..
   make -j8
   ```
+
 * ffmpeg: for saving the video of the imagination process.
   ```
   sudo apt install ffmpeg
@@ -69,13 +72,23 @@ If you only need the imagination module, please install the following packages.
 ## Real Robot Experiment
 If you want to include the real robot experiments (e.g., robot scanning and robot pouring), please also install the following packages. The experiment has been tested on a UR5 robot.
 * [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. Please follow the instruction in the [TSDFfusion-cpu repo]((https://github.com/hongtaowu67/TSDFfusion-cpu)) to compile the package.
+
 * [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html#install-python-pcl): PCL function to work with point clouds. It is a python wrapper of the PCL library.
   ```
   pip install python-pcl
   ```
+
 * [python-urx](https://github.com/SintefManufacturing/python-urx): a handful python wrapper to interact with UR robots.
   ```
   pip install urx
+  ```
+
+* [ROS](http://wiki.ros.org/): follow the [installation guide](http://wiki.ros.org/kinetic/Installation/Ubuntu) to install ROS.
+
+* openni2: ROS package to interact with PrimeSense camera
+  ```
+  sudo apt-get install ros-kinetic-openni2-launch
+  sudo apt-get install ros-kinetic-openni2-camera
   ```
 
 
