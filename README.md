@@ -1,11 +1,10 @@
 # Container Imagination
 __Can I Pour into it? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations (RA-L with ICRA 2021)__
 
-:star:__*Best Paper Finalist in Human-Robot Interaction of ICRA 2021*__:star:
 
 [Hongtao Wu](https://hongtaowu67.github.io/), [Gregory Chirikjian](https://me.jhu.edu/faculty/gregory-s-chirikjian/)
 
-Container Imagination is a method to enable robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
+Container Imagination is a method which enables robot to imagine the open containability affordance of an unseen object. With the understanding of the containability, the robot is able to identify whether the object is able to contain materials (e.g., M&M candies!) and pour a cup of the material into the object if it is identified as an open container.
 
 <p align="center">
 <img src="doc/teaser.gif" width=100% alt="Drawing">
@@ -19,6 +18,7 @@ Container Imagination is a method to enable robot to imagine the open containabi
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
 The following image summarize our method. Click the image to watch the video:
+
 [![introductory video](doc/thumbnail0.png)](https://youtu.be/n6dGRaLTv88)
 
 
@@ -79,7 +79,7 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
   ```
 
 
-# Module
+# Usage
 
 ## Imagination
 <p float="left">
@@ -115,15 +115,21 @@ The directory of the data should be structured as follows:
 ```
 
 ## Real Robot Experiment
+In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
 ### Camera Calibration
-We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calirbation target.
+We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
 
-Before you start, please mount the camera sturdily at the end-effector of the robot. And make sure that you have already conducted the camera calibration to get the camera intrinsic (see how to do camera intrinsic calibration [here](https://github.com/hongtaowu67/engineering_note)).
+Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note)).
 
-In this project, we are using the PrimeSense Carmine 1.09 and a UR5 robot.
+### Robot 3D Scanning
+<p float="left">
+<img src="doc/robot_setup.png" height=200px alt="Robot Setup">
+<img src="doc/scan.gif" height=200px alt="Robot Scanning">
+</p>
 
-### Robot Object Scanning
+In this module, the robot autonomously moves to 24 different views to capture the view of the object placed on a transparent platform. The depth camera and the corresponding robot pose are recored in each of the view and will later be used to reconstruct the object with TSDF fusion.
+
 
 ### TSDF Fusion
 
