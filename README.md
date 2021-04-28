@@ -123,9 +123,9 @@ We provide a simple calibration process for hand-eye calibration in the [calibra
 Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note)).
 
 ### Robot 3D Scanning
-<p float="left">
-<img src="doc/robot_setup.png" height=200px alt="Robot Setup">
-<img src="doc/scan.gif" height=200px alt="Robot Scanning">
+<p align="center">
+<img src="doc/robot_setup.png" height=250px alt="Robot Setup">
+<img src="doc/scan.gif" height=250px alt="Robot Scanning">
 </p>
 
 In this module, the robot autonomously moves to 24 different views to capture the view of the object placed on a transparent platform. The depth camera and the corresponding robot pose are recored in each of the view and will later be used to reconstruct the object with TSDF fusion.
