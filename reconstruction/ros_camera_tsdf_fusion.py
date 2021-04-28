@@ -1,8 +1,10 @@
-"""
-Capture different color and depth frames and the corresponding pose of the camera with ROS.
-@author: Hongtao Wu
-Nov 24, 2019
-"""
+# Capture different color and depth frames and the corresponding pose of the camera with ROS.
+
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Nov 24, 2019
+
+from __future__ import print_function
 
 import os
 import time
@@ -21,17 +23,22 @@ from threading import Lock
 
 from utils import make_rigid_transformation
 
+
 class ROSCameraTSDFFusion:
+    """
+    Class to capture data for TSDF fusion with ROS
+    """
     def __init__(self, automatic=False):
         """
-        Args:
-        - automatic: if True, then use robot transformation to get camera pose;
-                     if False, then use ArUco tag to get camera pose
+        @type  automatic: bool
+        @param automatic: if True, then use robot transformation to get camera pose;
+            if False, then use ArUco tag to get camera pose
         """
 
-        print('Starting the ROSCamera...')
-        print('Make sure to roslaunch openni2_launch openni2.launch!')
-        print('Make sure to roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>')
+        rospy.loginfo("Initializing ROSCameraTSDFFusion...")
+        rospy.loginfo(
+            "Make sure to roslaunch openni2_launch openni2.launch depth_registration:=true"
+        )
 
         self.automatic = automatic
 
@@ -41,17 +48,20 @@ class ROSCameraTSDFFusion:
         self.rgb_img = None
         self.depth_img = None
         self._rgb_sub = rospy.Subscriber(self.rgb_topic, Image, self._rgbCb)
-        self._depth_sub = rospy.Subscriber(self.depth_topic, Image, self._depthCb) 
+        self._depth_sub = rospy.Subscriber(self.depth_topic, Image,
+                                           self._depthCb)
 
         if not self.automatic:
             self.aruco_pose_topic = '/aruco_single/pose'
             self.camera_pose = None
-            self._pose_sub = rospy.Subscriber(self.aruco_pose_topic, PoseStamped, self._poseCb)       
-        
+            self._pose_sub = rospy.Subscriber(self.aruco_pose_topic,
+                                              PoseStamped, self._poseCb)
+
         self._bridge = CvBridge()
 
         self.mutex = Lock()
 
+        rospy.loginfo("Finish initializing ROSCameraTSDFFusion...")
 
     def _rgbCb(self, msg):
         if msg is None:
@@ -59,27 +69,23 @@ class ROSCameraTSDFFusion:
         try:
             cv_img = self._bridge.imgmsg_to_cv2(msg, 'rgb8')
             cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-            
-            
+
             self.rgb_img = cv_img
 
         except CvBridgeError as e:
             rospy.logwarn(str(e))
-
 
     def _depthCb(self, msg):
         if msg is None:
             rospy.logwarn('_depthCb: msg is None!')
         try:
             cv_img = self._bridge.imgmsg_to_cv2(msg, 'passthrough')
-            
-            
+
             self.depth_img = cv_img
 
         except CvBridgeError as e:
             rospy.logwarn(str(e))
 
-    
     def _poseCb(self, msg):
         if msg is None:
             rospy.logwarn('_depthCb: msg is None!')
@@ -96,7 +102,6 @@ class ROSCameraTSDFFusion:
 
         # Camera pose in marker frame
         self.camera_pose = np.linalg.inv(make_rigid_transformation(pos, orn))
-
 
     def get_frame(self):
         rgb_img = None
@@ -123,5 +128,5 @@ class ROSCameraTSDFFusion:
                 else:
                     print('camera_pose is None! Returning None!')
                     return None, None, None
-            
+
             return rgb_img, depth_img, camera_pose
