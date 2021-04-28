@@ -1,11 +1,9 @@
-#! /usr/bin/env python
-
 # Containbility of an object
 # Author: Hongtao Wu
 # Institution: Johns Hopkins University
 # Date: Feb 11, 2020
 
-from __future__ import division
+from __future__ import division, print_function
 
 import numpy as np
 import pybullet as p
@@ -460,15 +458,16 @@ class Containability(object):
 
         if sphere_num_percentage > self.sphere_in_percentage_threshold:
             print("#####################################")
-            print self.object_name
-            print("THIS IS A CONTAINER! The sphere in percentage is: {}".
-                  format(sphere_num_percentage))
+            print(self.object_name)
+            print(
+                "THIS IS A CONTAINER! The sphere in percentage is: {}".format(
+                    sphere_num_percentage))
             print("#####################################")
             self.containability = True
 
         else:
             print("/////////////////////////////////////")
-            print self.object_name
+            print(self.object_name)
             print("THIS IS NOT A CONTAINER!The sphere in percentage is: {}".
                   format(sphere_num_percentage))
             print("/////////////////////////////////////")
