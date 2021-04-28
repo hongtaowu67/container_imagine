@@ -118,7 +118,7 @@ The directory of the data should be structured as follows:
 In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
 ### Camera Calibration
-We provide a simple calibration process for hand-eye calibration in the [calibration toolbox](https://github.com/hongtaowu67/calibration_toolbox). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
+We provide a simple calibration process for hand-eye calibration. A more complete calibration toolbox can be found in [calibration toolbox repo](https://github.com/hongtaowu67/calibration_toolbox) (Franka Emika Panda robot is used in this repo). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
 
 Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note).
 
@@ -170,5 +170,5 @@ For more information about our group, please visit our website at: [https://chir
 ## TODO
 - [ ] add support on how to install TSDF Fusion and V-HACD
 - [ ] move the TSDF and V-HCAD away from main_imagination
-- [ ] look into pouring imagination code and add comments
 - [ ] work on code for real robot experiments
+- [ ] add support for simple calibration
