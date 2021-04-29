@@ -1,7 +1,3 @@
-*.obj
-*.urdf
-
-*.png
 *.txt
 
 *.pyc
