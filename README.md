@@ -58,7 +58,7 @@ If you only need the imagination module, please install the following packages.
 * [V-HACD](https://github.com/kmammou/v-hacd): convex decomposition of the mesh for pybullet simulation.
   ```
   git clone https://github.com/kmammou/v-hacd
-  cd v-hacd/
+  cd v-hacd/src/
   mkdir build && cd build
   cmake ..
   make -j8
