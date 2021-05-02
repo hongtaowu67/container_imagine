@@ -28,7 +28,7 @@ import os
 def quat2rotm(quat):
     """
     Quaternion to rotation matrix.
-    
+
     Args:
     - quat (4, numpy array): quaternion w, x, y, z
 
@@ -46,14 +46,14 @@ def quat2rotm(quat):
         1 - 2 * (y * y + z * z) / s, 2 * (x * y - z * w) / s,
         2 * (x * z + y * w) / s
     ],
-                     [
-                         2 * (x * y + z * w) / s, 1 - 2 * (x * x + z * z) / s,
-                         2 * (y * z - x * w) / s
-                     ],
-                     [
-                         2 * (x * z - y * w) / s, 2 * (y * z + x * w) / s,
-                         1 - 2 * (x * x + y * y) / s
-                     ]])
+        [
+        2 * (x * y + z * w) / s, 1 - 2 * (x * x + z * z) / s,
+        2 * (y * z - x * w) / s
+    ],
+        [
+        2 * (x * z - y * w) / s, 2 * (y * z + x * w) / s,
+        1 - 2 * (x * x + y * y) / s
+    ]])
 
     return rotm
 
@@ -268,12 +268,3 @@ def ply2csv(ply_file, csv_file):
             ])
 
     print("Finished!")
-
-
-# if __name__ == "__main__":
-#     ply_folder = '/home/hongtao/src/cup_imagine/reconstruction/tsdf-fusion/model'
-#     obj_name = '1209_boxesnao_point_debug_5'
-#     ply_filename = os.path.join(ply_folder, obj_name + '.ply')
-#     obj_filename = os.path.join(ply_folder, obj_name + '.csv')
-
-#     ply2csv(ply_filename, obj_filename)

@@ -1,14 +1,13 @@
-"""
-A wrapper code for running TSDF fusion of several RGBD frame.
-After TSDF fusion, the code also segment out objects in the scene 
-and save each one of them.
+# A wrapper code for running TSDF fusion of several RGBD frame.
+# After TSDF fusion, the code also segment out objects in the scene
+# and save each one of them.
 
-TSDF fusion repo: https://github.com/hongtaowu67/TSDFfusion-cpu
+# TSDF fusion repo: https://github.com/hongtaowu67/TSDFfusion-cpu
 
-Author: Hongtao Wu
-Institution: Johns Hopkins University
-Date: Nov 23. 2019
-"""
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Nov 23. 2019
+
 from __future__ import print_function
 
 import os
@@ -21,7 +20,7 @@ import time
 from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
-from reconstruction.utils import convert_tsdf_to_ply, segment_aabb_noplaneseg
+from processing.utils import convert_tsdf_to_ply, segment_aabb_noplaneseg
 
 
 def run_tsdf_fusion(tsdf_fusion_dir,
@@ -135,7 +134,7 @@ def tsdf_fusion_postprocess(tsdf_bin_file,
 
     This function will output the point clouds (.ply) and meshes 
     (.ply/.obj) of a list of segmented object from the scene.
-    
+
     Converts the tsdf binary file to a mesh file in ply format
     The indexing in the tsdf is
     (x,y,z) <--> (x + y * dim_x + z * dim_x * dim_y)
@@ -253,33 +252,3 @@ def tsdf_fusion_postprocess(tsdf_bin_file,
                 f.write('f {0}//{0} {1}//{1} {2}//{2}\n'.format(
                     item[0], item[1], item[2]))
             f.close()
-
-
-# Test
-if __name__ == "__main__":
-    root_dir = "/home/hongtao/src/cup_imagine"
-    tsdf_fusion_dir = "/home/hongtao/src/TSDFfusion-cpu"
-
-    model_name = "Gotham_pan_pour_pca"
-
-    data_root_folder = "/home/hongtao/Dropbox/ICRA2021/data"
-    data_folder = os.path.join(data_root_folder, model_name)
-    camera_intrinsics_file = os.path.join(root_dir,
-                                          "calibrate/camera-intrinsics.txt")
-
-    run_tsdf_fusion(tsdf_fusion_dir,
-                    data_folder,
-                    camera_intrinsics_file,
-                    voxel_grid_origin_x=-0.3,
-                    voxel_grid_origin_y=-0.55,
-                    voxel_grid_origin_z=0.03,
-                    fast_tsdf_settings=True)
-
-    tsdf_bin_file = os.path.join(data_root_folder, model_name, 'rgbd/tsdf.bin')
-    tsdf_ply_file = os.path.join(data_root_folder, model_name, 'rgbd/tsdf.ply')
-    ply_output_prefix = os.path.join(data_root_folder, model_name,
-                                     model_name + '_point')
-    mesh_output_prefix = os.path.join(data_root_folder, model_name,
-                                      model_name + '_mesh')
-    tsdf_fusion_postprocess(tsdf_bin_file, tsdf_ply_file, ply_output_prefix,
-                            mesh_output_prefix)
