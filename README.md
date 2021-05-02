@@ -91,6 +91,14 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
   sudo apt-get install ros-kinetic-openni2-camera
   ```
 
+* [aruco_ros](https://github.com/pal-robotics/aruco_ros): ROS package to detect the pose of ArUco tag. This package is for calibrating the robot arm. To download ArUco tag, see [here](https://chev.me/arucogen/). More details can be found [here](https://github.com/hongtaowu67/engineering_note). To install, clone the repo into your catkin workspace and catkin_make
+  ```
+  cd ~/catkin_ws/src
+  git clone https://github.com/pal-robotics/aruco_ros
+  cd ..
+  catkin_make
+  source devel/setup.bash
+  ```
 
 # Usage
 
@@ -133,7 +141,25 @@ In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robo
 ### Camera Calibration
 We provide a simple calibration process for hand-eye calibration. A more complete calibration toolbox can be found in [calibration toolbox repo](https://github.com/hongtaowu67/calibration_toolbox) (Franka Emika Panda robot is used in this repo). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
 
-Make sure that the instrinsic of your camera is well-calibrated. For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note).
+Make sure that the instrinsic of your camera is well-calibrated. 
+For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note). 
+Also, please install the [aruco_ros](https://github.com/pal-robotics/aruco_ros) package.
+To run the calibration, first specify about 20 poses of the robot to capture the calibration target.
+Record the joint configurations in *calibrate.py*.
+Then, roslaunch the camera and aruco_ros. For PrimeSense camera
+  ```
+  roslaunch openni2_launch openni2.launch
+  roslaunch aruco_ros single.launch markerId:=<markerId> markerSize:=<markerSize>
+  ```
+Run the calibration script
+  ```
+  python calibrate.py --save_dir <save_dir> --tcp_host_ip <tcp_host_ip>
+  ```
+  * save_dir: directory to save the calibration data
+  * tcp_host_ip: IP address of the robot
+
+The robot will move to the poses specified in *calibrate.py* and save the calibration data in save_dir.
+AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/document/326576). The calibrated camera to end-effector transformation is a (4, 4) homogeneous transformation. It will be written to *save_dir/camera_pose.txt* in (16, ) format.
 
 ### Robot 3D Scanning
 <p align="center">
