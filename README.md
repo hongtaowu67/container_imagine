@@ -83,6 +83,21 @@ If you want to include the real robot experiments (e.g., robot scanning and robo
   pip install urx
   ```
 
+* [pyyaml](https://github.com/yaml/pyyaml): a python yaml reader package
+  ```
+  pip install pyyaml
+  ```
+
+* scikit-image: using the marching-cube algorithm to reconstruct the mesh. For python 2.7, we use version 0.14.5.
+  ```
+  pip install scikit-image
+  ```
+
+* plyFile
+  ```
+  pip install plyfile
+  ```
+
 * [ROS](http://wiki.ros.org/): follow the [installation guide](http://wiki.ros.org/kinetic/Installation/Ubuntu) to install ROS.
 
 * openni2: ROS package to interact with PrimeSense camera
@@ -145,7 +160,7 @@ Make sure that the instrinsic of your camera is well-calibrated.
 For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note). 
 Also, please install the [aruco_ros](https://github.com/pal-robotics/aruco_ros) package.
 To run the calibration, first specify about 20 poses of the robot to capture the calibration target.
-Record the joint configurations in *calibrate.py*.
+Record the joint configurations in *self.calib_point* in *calibrate.py*.
 Then, roslaunch the camera and aruco_ros. For PrimeSense camera
   ```
   roslaunch openni2_launch openni2.launch
@@ -169,8 +184,10 @@ AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/d
 
 In this module, the robot autonomously moves to 24 different views to capture the view of the object placed on a transparent platform. The depth camera and the corresponding robot pose are recored in each of the view and will later be used to reconstruct the object with TSDF fusion.
 
+Specify the capturing pose of the robot in *self.rob_joints_view* in *capture_view.py*. In this paper, we use 24 views. But more or less views are also ok.
 
 ### TSDF Fusion
+The TSDF Fusion code is sourced from [Andy Zeng's TSDF fusion repo](https://github.com/andyzeng/tsdf-fusion) which was originally written to work with GPU. 
 
 ### V-HACD convex decomposition
 
@@ -179,6 +196,8 @@ The real robot experiment use *containability.py* to imagine the containability.
 python main.py
 ```
 Specify the data directory (directory to save the data), the content urdf and the data name in *main.py*. A directory with the object name will be created in the data directory. The RGB images, depth images, scanned 3D model file (obj), object urdf file, open containability imagination visualization (mp4), and the containability imagination results (txt) will be saved in this directory. 
+
+### Run the experiment
 
 ## Containability Imagination Benchmark
 The objects are saved in `test_set_all/` which contains 99 objects at the moment. To run the containability imagination benchmark, run
@@ -208,6 +227,5 @@ For more information about our group, please visit our website at: [https://chir
 
 ## TODO
 - [ ] add support on how to install TSDF Fusion and V-HACD
-- [ ] move the TSDF and V-HCAD away from main_imagination
 - [ ] work on code for real robot experiments
 - [ ] add support for simple calibration
