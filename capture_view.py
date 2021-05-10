@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Automatically capture frames to reconstruct the object.
 
 # Author: Hongtao Wu
@@ -14,13 +12,14 @@ import cv2
 import rospy
 
 from robot import Robot
-from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
+from ros_camera_tsdf_fusion import ROSCameraTSDFFusion
 
 
 class AutoCapture(object):
     """
     Class to automatically capture the scene for reconstruction
     """
+
     def __init__(self,
                  data_folder,
                  acc,

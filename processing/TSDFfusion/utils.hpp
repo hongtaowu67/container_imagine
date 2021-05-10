@@ -1,5 +1,10 @@
 // ---------------------------------------------------------
 // Author: Andy Zeng, Princeton University, 2016
+// -----
+// Modifier: Hongtao Wu, Johns Hopkins University, 2019
+// Modification: 
+//    Change the base frame from the camera fram of the first frame to the world frame
+//    Change from GPU to CPU
 // ---------------------------------------------------------
 
 #include <vector>
@@ -67,7 +72,7 @@ std::vector<float> LoadMatrixFromFile(std::string filename, int M, int N) {
 // Read a depth image with size H x W and save the depth values (in meters) into a float array (in row-major order)
 // The depth image file is assumed to be in 16-bit PNG format, depth in millimeters
 void ReadDepth(std::string filename, int H, int W, float * depth) {
-  cv::Mat depth_mat = cv::imread(filename, CV_LOAD_IMAGE_UNCHANGED);
+  cv::Mat depth_mat = cv::imread(filename, cv::IMREAD_UNCHANGED);
   if (depth_mat.empty()) {
     std::cout << "Error: depth image file not read!" << std::endl;
     cv::waitKey(0);
@@ -231,18 +236,3 @@ bool invert_matrix(const float m[16], float invOut[16]) {
 
   return true;
 }
-
-// void FatalError(const int lineNumber = 0) {
-//   std::cerr << "FatalError";
-//   if (lineNumber != 0) std::cerr << " at LINE " << lineNumber;
-//   std::cerr << ". Program Terminated." << std::endl;
-//   cudaDeviceReset();
-//   exit(EXIT_FAILURE);
-// }
-
-// void checkCUDA(const int lineNumber, cudaError_t status) {
-//   if (status != cudaSuccess) {
-//     std::cerr << "CUDA failure at LINE " << lineNumber << ": " << status << std::endl;
-//     FatalError();
-//   }
-// }

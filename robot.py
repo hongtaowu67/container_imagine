@@ -4,6 +4,7 @@
 # Institution: Johns Hopkins University
 # Date: Dec 22, 2019
 
+from __future__ import print_function
 import socket
 import select
 import struct
@@ -64,7 +65,7 @@ class Robot(object):
         if go_home:
             self.go_home()
 
-        #TODO: Initialize the camera
+        print("Robot is ready!")
 
     def move_to(self,
                 tool_position,

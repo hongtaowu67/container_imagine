@@ -3,6 +3,6 @@
 *.pyc
 
 processing/log.txt
+processing/TSDFfusion/build
 
-reconstruction/TSDFfusion/build
-reconstruction/utils.pyc
+.vscode/

@@ -16,19 +16,19 @@ from datetime import date
 
 import numpy as np
 
-from capture_view import AutoCapture
+# from capture_view import AutoCapture
 from processing.tsdf_fusion import run_tsdf_fusion, tsdf_fusion_postprocess
 from processing.process import run_vhacd, write_urdf
 from containability import Containability
 from pouring import CupPour
 from pick_and_pour import PickAndPour
 
-cup_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/cup/Cup_GeoCenter.urdf"
-content_urdf = "/home/hongtao/Dropbox/ICRA2021/data/general/m&m.urdf"
-data_name = "Gotham_pan_pour_pca"
+cup_urdf = "object/Cup_GeoCenter.urdf"
+content_urdf = "object/m&m.urdf"
+data_name = "Amazon_Accessory_Tray_pour_pca"
 pouring = True
 
-data_root_dir = "/home/hongtao/Dropbox/ICRA2021/data"
+data_root_dir = "data"
 
 start_time = time.time()
 
@@ -43,17 +43,17 @@ if not os.path.exists(data_folder):
 cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
 ############### Capture views of the object #################
-AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'),
-                 acc=1.0,
-                 vel=1.0,
-                 cam2ee_file=cam2ee_file)
-AC.collect_data()
+# AC = AutoCapture(data_folder=os.path.join(data_folder, 'rgbd'),
+#                  acc=1.0,
+#                  vel=1.0,
+#                  cam2ee_file=cam2ee_file)
+# AC.collect_data()
 
-autocapture_time = time.time() - start_time
+# autocapture_time = time.time() - start_time
 #############################################################
 
 ######## 3D reconstruct the object with TSDF Fusion #########
-tsdf_fusion_dir = os.path.join(root_dir, 'reconstruction/TSDFfusion')
+tsdf_fusion_dir = os.path.join(root_dir, 'processing/TSDFfusion')
 
 # TSDF Fusion
 image_folder = os.path.join(data_root_dir, data_name, 'rgbd')
@@ -77,7 +77,7 @@ obj_mesh_output_prefix = os.path.join(data_root_dir, data_name,
 tsdf_fusion_postprocess(tsdf_bin_file, tsdf_ply_file, ply_output_prefix,
                         obj_mesh_output_prefix)
 ##############################################################
-
+'''
 ##################### VHACD processing #######################
 object_name = data_name + "_mesh_0"
 
@@ -198,3 +198,4 @@ with open(result_txt_name, "w") as file1:
     file1.write("Pouring time: " + str(pouring_time) + "\n")
     file1.write("Object url: \n")
 ################################################################
+'''

@@ -13,7 +13,6 @@ import cv2
 import rospy
 
 from robot import Robot
-from reconstruction.ros_camera_tsdf_fusion import ROSCameraTSDFFusion
 from utils import angle2rotm, make_rigid_transformation, rotm2angle
 
 
@@ -242,10 +241,10 @@ class PickAndPour:
             np.cos(bottle_angle + 3 * np.pi / 4),
             np.cos(bottle_angle + np.pi / 4), 0.0
         ],
-                              [
-                                  np.sin(bottle_angle + 3 * np.pi / 4),
-                                  np.sin(bottle_angle + np.pi / 4), 0.0
-                              ], [0, 0, -1]])
+            [
+            np.sin(bottle_angle + 3 * np.pi / 4),
+            np.sin(bottle_angle + np.pi / 4), 0.0
+        ], [0, 0, -1]])
 
         rotate_axis = np.array([
             np.cos(bottle_angle - np.pi / 2),
@@ -295,10 +294,10 @@ class PickAndPour:
             np.cos(bottle_angle + 3 * np.pi / 4),
             np.cos(bottle_angle + np.pi / 4), 0.0
         ],
-                                     [
-                                         np.sin(bottle_angle + 3 * np.pi / 4),
-                                         np.sin(bottle_angle + np.pi / 4), 0.0
-                                     ], [0, 0, -1]])
+            [
+            np.sin(bottle_angle + 3 * np.pi / 4),
+            np.sin(bottle_angle + np.pi / 4), 0.0
+        ], [0, 0, -1]])
 
         # Applied rotation to the ee horizontal frame
         bottle_rotate_axis = np.array([
