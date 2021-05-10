@@ -68,7 +68,7 @@ python main_imagination.py <root_dir> <data_dir> <data_name> <mesh_name> [-p] [-
 
 An example argument is given as follows:
 ```
-python main_imagination.py <root_dir> <root_dir>/data Amazon_Accessory_Tray_pour_pca_mesh_0 -p True -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
+python main_imagination.py <root_dir> <root_dir>/data Amazon_Accessory_Tray_pour_pca Amazon_Accessory_Tray_pour_pca_mesh_0 -p True -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
 ```
 The directory of the data should be structured as follows:
 ```bash
