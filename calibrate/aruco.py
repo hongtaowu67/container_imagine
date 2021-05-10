@@ -1,8 +1,8 @@
-"""
-Get the transformation from marker to the camera.
-@author: Hongtao Wu
-Nov 15, 2019
-"""
+# Get the transformation from marker to the camera.
+
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Nov 15, 2019
 
 import rospy
 import roslib
@@ -18,7 +18,10 @@ from cv_bridge import CvBridge
 from cv_bridge import CvBridgeError
 
 
-class ArUco:
+class ArUco(object):
+    """
+    Class to interact with ArUco tag
+    """
     def __init__(self):
         self.pose_topic = "/aruco_single/pose"
         self.aruco_img_topic = "/aruco_single/result"
@@ -42,7 +45,6 @@ class ArUco:
         self.mutex = Lock()
         self._bridge = CvBridge()
 
-
     def _poseInfoCb(self, msg):
         if msg is None:
             rospy.logwarn("_poseInfoCb: msg is None!")
@@ -58,27 +60,18 @@ class ArUco:
             self.pos = np.array([self.pose_x, self.pose_y, self.pose_z])
             self.orn = np.array([self.pose_qw, self.pose_qx, self.pose_qy, self.pose_qz])
 
-
     def _arucoimgCb(self, msg):
         if msg is None:
             rospy.logwarn("_arucoimgCb: msg is None !!!!!!!!!")
         try:
-            # max out at 10 hz assuming 30hz data source
             if msg.header.seq % 3 == 0:
                 cv_image = self._bridge.imgmsg_to_cv2(msg, "rgb8")
-                # decode the data, this will take some time
-
-                # rospy.loginfo('rgb color cv_image shape: ' + str(cv_image.shape) + ' depth sequence number: ' + str(msg.header.seq))
-                # print('rgb color cv_image shape: ' + str(cv_image.shape))
                 cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-                # rgb_img = cv2.imencode('.jpg', cv_image)[1].tobytes()
-                # rgb_img = GetJpeg(np.asarray(cv_image))
 
                 with self.mutex:
                     self.aruco_img = cv_image
         except CvBridgeError as e:
             rospy.logwarn(str(e))
-
 
     def get_pose(self):
         pos = None
@@ -92,6 +85,3 @@ class ArUco:
                 aruco_img = self.aruco_img
 
         return pos, orn, aruco_img
-
-
-
