@@ -27,7 +27,7 @@ The following image summarize our method. Click the image to watch the video:
 Open containers, i.e., containers without covers, are an important and ubiquitous class of objects in human life. We propose a novel method for robots to "imagine" the open containability affordance of a previously unseen object via physical simulations. We implement our imagination method on a UR5 manipulator. The robot autonomously scans the object with an RGB-D camera. The scanned 3D model is used for open containability imagination which quantifies the open containability affordance by physically simulating dropping particles onto the object and counting how many particles are retained in it. This quantification is used for open-container vs. non-open-container binary classification. If the object is classified as an open container, the robot further imagines pouring into the object, again using physical simulations, to obtain the pouring position and orientation for real robot autonomous pouring. We evaluate our method on open container classification and autonomous pouring of granular material on a dataset containing 130 previously unseen objects with 57 object categories. Although our proposed method uses only 11 objects for simulation calibration (training), its open container classification aligns well with human judgements. In addition, our method endows the robot with the capability to autonomously pour into the 55 containers in the dataset with a very high success rate.
 
 # Citation
-If you find this code useful in your work, please consider citing
+If you find this code and/or the data useful in your work, please consider citing
 ```
 @article{wu2020can,
   title={Can I Pour Into It? Robot Imagining Open Containability Affordance of Previously Unseen Objects via Physical Simulations},
@@ -85,9 +85,9 @@ The directory of the data should be structured as follows:
 In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
 <p align="center">
-<img src="doc/robot_setup.png" height=150px alt="Robot Setup">
-<img src="doc/scan.gif" height=150px alt="Robot Scanning">
-<img src="doc/real_robot_pour.gif" height=150px alt="Robot Pouring">
+<img src="doc/robot_setup.png" height=160px alt="Robot Setup">
+<img src="doc/scan.gif" height=160px alt="Robot Scanning">
+<img src="doc/real_robot_pour.gif" height=160px alt="Robot Pouring">
 </p>
 
 To run the experiment:
