@@ -14,7 +14,7 @@ Container Imagination is a method which enables robot to imagine the open contai
 * [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
 * [Paper on arxiv](https://arxiv.org/abs/2008.02321)
 * [Project Page & Video Results](https://chirikjianlab.github.io/realcontainerimagination/)
-* [Data] (https://www.dropbox.com/s/fpnxhigttq06w1w/contain_imagine_data_RAL2021.zip?dl=0)
+* [Data](https://www.dropbox.com/s/fpnxhigttq06w1w/contain_imagine_data_RAL2021.zip?dl=0)
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
@@ -84,7 +84,11 @@ The directory of the data should be structured as follows:
 ## Real Robot Experiment
 In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
-- [ ] Add video for the real robot experiment
+<p align="center">
+<img src="doc/robot_setup.png" height=180px alt="Robot Setup">
+<img src="doc/scan.gif" height=180px alt="Robot Scanning">
+<img src="doc/real_robot_pour.gif" height=180px alt="Robot Pouring">
+</p>
 
 To run the experiment:
 
@@ -175,11 +179,6 @@ AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/d
 
 ### Robot 3D Scanning
 ------
-<p align="center">
-<img src="doc/robot_setup.png" height=250px alt="Robot Setup">
-<img src="doc/scan.gif" height=250px alt="Robot Scanning">
-</p>
-
 In this module, the robot autonomously moves to 24 different views to capture the view of the object placed on a transparent platform. The depth camera and the corresponding robot pose are recored in each of the view and will later be used to reconstruct the object with TSDF fusion.
 
 Specify the capturing pose of the robot in *self.rob_joints_view* in [capture_view.py](capture_view.py). In this paper, we use 24 views. But more or less views are also ok.
