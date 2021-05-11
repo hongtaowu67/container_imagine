@@ -1,0 +1,10 @@
+Name: Amazon_Accessory_Tray_pour_pca
+Date: 2021-04-26-10-57
+Containability: True
+Sphere in percentage: 0.566666666667
+Average drop position: [-0.10367986462103054, -0.2919047220541068, 0.12363800007104886]
+Imagined pour position: [-0.11367155 -0.29231244  0.123638  ]
+Imagined cup angle: 0.0407827524900149
+Spill List: [[0, 0, 0], [0, 0, 6], [6, 0, 58], [0, 0, 6], [0, 0, 0], [0, 0, 2], [4, 0, 51], [0, 0, 1]]
+Containability imagination time: 58.9244570732
+Pouring imagination time: 141.828545094
