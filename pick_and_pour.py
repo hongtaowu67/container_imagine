@@ -1,6 +1,8 @@
-"""
-Pour with different orientations and positions
-"""
+# Pick up cups and pour with UR5 robot
+
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Jan 14, 2020
 
 from __future__ import division
 
@@ -17,6 +19,9 @@ from utils import angle2rotm, make_rigid_transformation, rotm2angle
 
 
 class PickAndPour:
+    """
+    Class for pouring from different orientations and positions
+    """
     def __init__(self, acc, vel, robot_ip='172.22.22.2'):
         self.acc = acc
         self.vel = vel

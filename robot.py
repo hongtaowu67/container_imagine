@@ -1,4 +1,4 @@
-# Robot control
+# UR5 Robot control with python urx
 
 # Author: Hongtao Wu
 # Institution: Johns Hopkins University
