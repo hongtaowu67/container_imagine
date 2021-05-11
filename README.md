@@ -54,13 +54,13 @@ To install the dependencies, please refer to [here](dependency.md).
 <img src="doc/pouring_imagine.gif" height=200px alt="Pouring Imagination">
 </p>
 
-The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is *main_imagination.py*.
+The imagination contains two part: open containability imagination and pouring imagination. The main script for imagination is [main_imagination.py](main_imagination.py).
 ```
-python main_imagination.py <root_dir> <data_dir> <data_name> <mesh_name> [-p] [-v] [-m] 
+python main_imagination.py <root_dir> <data_root_dir> <data_name> <mesh_name> [-p] [-v] [-m] 
 ```
 - root_dir: root directory of the code
-- data_dir: root directory of the data
-- data_name: name of the data in data_dir. Note that a data represent a capture of a scene. There may be more than one object in the scene.
+- data_root_dir: root directory of the data
+- data_name: name of the data in data_root_dir. Note that a data represent a capture of a scene. There may be more than one object in the scene.
 - mesh_name: name of the mesh / object for imagination
 - [-p]: if set as True, pouring imagination will be activated
 - [-v]: if set as True, visualization of the imagination will be activated
@@ -72,7 +72,7 @@ python main_imagination.py <root_dir> <root_dir>/data Amazon_Accessory_Tray_pour
 ```
 The directory of the data should be structured as follows:
 ```bash
-├── data_dir
+├── data_root_dir
 │   ├── data_name_0
 │   │   ├── object_name_0.obj
 │   │   ├── object_name_0_vhacd.obj
@@ -83,14 +83,59 @@ The directory of the data should be structured as follows:
 ## Real Robot Experiment
 In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
+- [ ] Add video for the real robot experiment
+
+To run the experiment:
+
+1. Launch the camera
+  ```
+  roslaunch openni2_launch openni2.launch depth_registration:=true
+  ```
+2. Run the experiment. The main code for running the experiment is [main_pour.py](main_pour.py).
+```
+python main_pour <root_dir> <data_root_dir> <data_name> <vhacd_dir> [-p] [-r] [-v] [-m] 
+```
+- root_dir: root directory of the code
+- data_root_dir: root directory of the data
+- data_name: name of the data in data_root_dir. Note that a data represent a capture of a scene. There may be more than one object in the scene.
+- vhacd_dir: directory of the V-HACD source code. To install V-HACD, see [Setup instruction](Setup.md).
+- [-p]: if set as True, pouring imagination and robot pouring will be activated
+- [-r]: IP address of the UR5 robot. If robot pouring is not activated, then this is useless.
+- [-v]: if set as True, visualization of the imagination will be activated
+- [-m]: if a directory is given, the video of the imagination will be saved thereof. Note that this needs to be used with the [-v] option. The video name of the containabiliy imagination is object_name_contain.mp4 the video name of the pouring imagination is object_name_pour.mp4
+
+An example argument is given as follows:
+```
+python main_imagination.py <root_dir> <root_dir>/data Amazon_Accessory_Tray_pour_pca /home/admin/src/vhacd -p True -r 172.22.22.2 -v True -m <root_dir>/data/Amazon_Accessory_Tray_pour_pca
+```
+
+The robot will sequentially
+  - scan the object
+  - use TSDF fusion to recontruct the object and create a mesh of the object
+  - use V-HACD to do convex decomposition of the object mesh
+  - do containability imagination
+  - do pouring imagination
+  - pick up and pour a cup of M&M's into the object if it is identified as an open container
+
+The details of different modules of the experiments are listed in the following.
+
 ### Camera Calibration
+Before running the experiment, the camera should be calibrated.
+
+First, calibrate the instrinsic of the depth camera.
+If the depth camera is registered to the rgb camera (e.g. depth_registration is activated when capturing the depth image with PrimeSense and Openni), then use the instrinsic of the rgb camera.
+The camera instrinsic file should be saved in *calibrate/*. See *calibrate/camera-intrinsics.txt* for details.
+For how to do camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note). 
+
 We provide a simple calibration process for hand-eye calibration. A more complete calibration toolbox can be found in [calibration toolbox repo](https://github.com/hongtaowu67/calibration_toolbox) (Franka Emika Panda robot is used in this repo). The calibration is an eye-on-hand calibration. The provided method aims to get the pose of the camera frame in the robot base frame. To do so, the robot moves to several pre-defined configurations and record the robot's end-effector pose and the pose of the calibration target.
 
-Make sure that the instrinsic of your camera is well-calibrated. 
-For camera intrinsic calibration, see [here](https://github.com/hongtaowu67/engineering_note). 
-Also, please install the [aruco_ros](https://github.com/pal-robotics/aruco_ros) package.
+The calibration target we used is the ArUco tag.
+Make sure the [aruco_ros](https://github.com/pal-robotics/aruco_ros) ROS package is installed.
+The ArUco tag can be generated and printed from [here](https://chev.me/arucogen/).
+More details about how to use ArUco tag can be found in [official github repo](https://github.com/pal-robotics/aruco_ros) and [here](https://github.com/hongtaowu67/engineering_note).
+
 To run the calibration, first specify about 20 poses of the robot to capture the calibration target.
-Record the joint configurations in *self.calib_point* in *calibrate.py*.
+Record the joint configurations in *self.calib_point* in [calibrate.py](calibrate.py).
 Then, roslaunch the camera and aruco_ros. For PrimeSense camera
   ```
   roslaunch openni2_launch openni2.launch
@@ -103,7 +148,7 @@ Run the calibration script
   * save_dir: directory to save the calibration data
   * tcp_host_ip: IP address of the robot
 
-The robot will move to the poses specified in *calibrate.py* and save the calibration data in save_dir.
+The robot will move to the poses specified in [calibrate.py](calibrate.py) and save the calibration data in save_dir.
 AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/document/326576). The calibrated camera to end-effector transformation is a (4, 4) homogeneous transformation. It will be written to *save_dir/camera_pose.txt* in (16, ) format.
 
 ### Robot 3D Scanning
@@ -114,20 +159,17 @@ AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/d
 
 In this module, the robot autonomously moves to 24 different views to capture the view of the object placed on a transparent platform. The depth camera and the corresponding robot pose are recored in each of the view and will later be used to reconstruct the object with TSDF fusion.
 
-Specify the capturing pose of the robot in *self.rob_joints_view* in *capture_view.py*. In this paper, we use 24 views. But more or less views are also ok.
+Specify the capturing pose of the robot in *self.rob_joints_view* in [capture_view.py](capture_view.py). In this paper, we use 24 views. But more or less views are also ok.
 
 ### TSDF Fusion
+TSDF fusion is used to reconstruct the volume from the depth images captured in Robot 3D Scanning.
 The TSDF Fusion code is sourced from [Andy Zeng's TSDF fusion repo](https://github.com/andyzeng/tsdf-fusion) which was originally written to work with GPU. 
+Here, we modify the code and provide a CPU version for running. Please follow the [Setup instruction](Setup.md) to install TSDF fusion.
 
 ### V-HACD convex decomposition
+V-HACD is used to decompose the mesh reconstructed from TSDF fusion for physical simulation in Pybullet.
+Please follow the [Setup instruction](Setup.md)
 
-The real robot experiment use *containability.py* to imagine the containability. To run the real robot experiment, run
-```shell
-python main.py
-```
-Specify the data directory (directory to save the data), the content urdf and the data name in *main.py*. A directory with the object name will be created in the data directory. The RGB images, depth images, scanned 3D model file (obj), object urdf file, open containability imagination visualization (mp4), and the containability imagination results (txt) will be saved in this directory. 
-
-### Run the experiment
 
 ## Containability Imagination Benchmark
 The objects are saved in `test_set_all/` which contains 99 objects at the moment. To run the containability imagination benchmark, run
@@ -156,6 +198,4 @@ These are the related papers on the robot imagination project our group is worki
 For more information about our group, please visit our website at: [https://chirikjianlab.github.io/](https://chirikjianlab.github.io/)
 
 ## TODO
-- [ ] add support on how to install TSDF Fusion and V-HACD
-- [ ] work on code for real robot experiments
-- [ ] add support for simple calibration
+- [ ] Release data for benchmarking

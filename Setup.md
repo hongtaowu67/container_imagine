@@ -1,4 +1,4 @@
-# Dependencies
+# Setup
 The setup for dependency is split into to two sections. The first section is the requirement for imagination only. The second section installs the required package if you want to do real robot experiments.
 
 ## Imagination
@@ -19,18 +19,25 @@ If you only need the imagination module, please install the following packages.
   cd v-hacd/src/
   mkdir build && cd build
   cmake ..
-  make -j8
+  make
   ```
 
-* ffmpeg: for saving the video of the imagination process.
+* ffmpeg: saving the video of the imagination process.
   ```
   sudo apt install ffmpeg
   ```
 
 ## Real Robot Experiment
 If you want to include the real robot experiments (e.g., robot scanning and robot pouring), please also install the following packages. The experiment has been tested on a UR5 robot.
-* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. Please follow the instruction in the [TSDFfusion-cpu repo]((https://github.com/hongtaowu67/TSDFfusion-cpu)) to compile the package.
+* [OpenCV](https://opencv.org/): We used OpenCV 3.3 in this project. Please download the source code from the official website and install.
 
+* [TSDF Fusion](https://github.com/hongtaowu67/TSDFfusion-cpu): 3D mesh reconstruction from the depth images capture from the camera. In this repo, we provide the code for installation.
+  ```
+  cd processing/TSDFfusion
+  mkdir build && cd build
+  cmake ..
+  make
+  ```
 * [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html#install-python-pcl): PCL function to work with point clouds. It is a python wrapper of the PCL library.
   ```
   pip install python-pcl
