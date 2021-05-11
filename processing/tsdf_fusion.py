@@ -20,7 +20,7 @@ import time
 from skimage import measure
 from plyfile import PlyData, PlyElement
 import array
-from processing.utils import convert_tsdf_to_ply, segment_aabb_noplaneseg
+from processing.utils import convert_tsdf_to_ply, segment_aabb
 
 
 def run_tsdf_fusion(tsdf_fusion_dir,
@@ -64,8 +64,9 @@ def run_tsdf_fusion(tsdf_fusion_dir,
     @param  fast_tsdf_settings: whether to use fast tsdf params
     """
     # Path to the executable of the tsdf fusion
-    tsdf_executable = os.path.join(tsdf_fusion_dir,
-                                   'build/tsdf-fusion-cpu-150')
+    tsdf_executable = os.path.join(tsdf_fusion_dir, 'build/tsdf-fusion-cpu')
+
+    print("TSDF executable: {}".format(tsdf_executable))
 
     if not os.path.isfile(tsdf_executable):
         raise ValueError('tsdf executable not found, have you compiled it?')
@@ -106,8 +107,8 @@ def run_tsdf_fusion(tsdf_fusion_dir,
     process.wait()
 
     # Move the bin and ply file to the image folder
-    tsdf_bin_source = os.path.join(tsdf_fusion_dir, 'model/tsdf.bin')
-    tsdf_ply_source = os.path.join(tsdf_fusion_dir, 'model/tsdf.ply')
+    tsdf_bin_source = os.path.join(tsdf_fusion_dir, 'tsdf.bin')
+    tsdf_ply_source = os.path.join(tsdf_fusion_dir, 'tsdf.ply')
 
     tsdf_result_dir = os.path.join(data_dir, "tsdf_fusion_result")
     if os.path.exists(tsdf_result_dir):
@@ -178,7 +179,7 @@ def tsdf_fusion_postprocess(tsdf_bin_file,
                       order='F')  # reshape using Fortran order
 
     # Segment the mesh points
-    objects_aabb = segment_aabb_noplaneseg(mesh_points, ply_output_prefix)
+    objects_aabb = segment_aabb(mesh_points, ply_output_prefix)
 
     for obj_id, obj_aabb in enumerate(objects_aabb):
         min_x_in_voxel = max(
