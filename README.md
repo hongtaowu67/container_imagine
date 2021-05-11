@@ -44,7 +44,7 @@ If you find this code and/or the data useful in your work, please consider citin
 # Dependencies
 The project has been tested on Ubuntu 16.04 with python 2.7. We are working on transfering the code to python 3 on later version of Ubuntu release.
 
-To install the dependencies, please refer to [here](dependency.md).
+To install the dependencies, please refer to [here](Setup.md).
 
 # Usage
 
