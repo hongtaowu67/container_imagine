@@ -110,7 +110,7 @@ def run_tsdf_fusion(tsdf_fusion_dir,
     tsdf_bin_source = os.path.join(tsdf_fusion_dir, 'tsdf.bin')
     tsdf_ply_source = os.path.join(tsdf_fusion_dir, 'tsdf.ply')
 
-    tsdf_result_dir = os.path.join(data_dir, "tsdf_fusion_result")
+    tsdf_result_dir = os.path.join(data_dir, "rgbd")
     if os.path.exists(tsdf_result_dir):
         pass
     else:
