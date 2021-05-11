@@ -12,6 +12,7 @@
 
 import os
 import numpy as np
+import argparse
 
 from capture_view import AutoCapture
 from processing.tsdf_fusion import run_tsdf_fusion, tsdf_fusion_postprocess
@@ -78,7 +79,7 @@ cup_urdf = os.path.join(root_dir, "object/Cup_GeoCenter.urdf")
 content_urdf = os.path.join(root_dir, "object/m&m.urdf")
 marker_content_urdf = os.path.join(root_dir, "object/m&m_red.urdf")
 
-vhacd_dir = args.vhacd
+vhacd_dir = args.vhacd_dir
 
 data_root_dir = args.data_root_dir
 data_name = args.data_name
@@ -92,6 +93,7 @@ if not os.path.exists(data_dir):
 cam2ee_file = os.path.join(root_dir, "calibrate/camera_pose.txt")
 
 ############### Capture views of the object #################
+# You may comment this section if you do not need robot capture view
 AC = AutoCapture(data_folder=os.path.join(data_dir, 'rgbd'),
                  acc=1.0,
                  vel=1.0,
@@ -102,7 +104,6 @@ AC.collect_data()
 tsdf_fusion_dir = os.path.join(root_dir, 'processing/TSDFfusion')
 
 # TSDF Fusion
-
 camera_intrinsics_file = os.path.join(root_dir,
                                       "calibrate/camera-intrinsics.txt")
 run_tsdf_fusion(tsdf_fusion_dir,
@@ -149,7 +150,7 @@ C = Containability(obj_urdf,
                    obj_vhacd_path,
                    obj_zero_pos=[0, 0, 1],
                    obj_zero_orn=[0, 0, 0],
-                   check_process=True,
+                   check_process=visualization,
                    mp4_dir=mp4_dir,
                    object_name=object_name,
                    content_urdf=content_urdf)
@@ -178,7 +179,7 @@ if pouring:
                      indent_num=3,
                      content_num=60,
                      obj_zero_pos=[0, 0, 1],
-                     check_process=True,
+                     check_process=visualization,
                      mp4_dir=mp4_dir,
                      object_name=object_name)
         spill_list = CP.cup_pour()
@@ -193,6 +194,7 @@ if pouring:
                       [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
 
 ################## Real Robot Pouring #####################
+# You may comment this section if you do not need robot pouring
 if pouring:
     if containability_affordance:
         PP = PickAndPour(robot_ip=robot_ip, acc=0.5, vel=0.5)
