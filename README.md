@@ -85,9 +85,9 @@ The directory of the data should be structured as follows:
 In this project, we used the PrimeSense Carmine 1.09 RGB-D camera and a UR5 robot. The gripper we used is the [AFAG EU-20 UR universal gripper](https://www.afag.com/fileadmin/user_upload/afag/Produkte/HTK_Greifen_Drehen/PDF_Files/EU_PDB_EN.pdf).
 
 <p align="center">
-<img src="doc/robot_setup.png" height=180px alt="Robot Setup">
-<img src="doc/scan.gif" height=180px alt="Robot Scanning">
-<img src="doc/real_robot_pour.gif" height=180px alt="Robot Pouring">
+<img src="doc/robot_setup.png" height=150px alt="Robot Setup">
+<img src="doc/scan.gif" height=150px alt="Robot Scanning">
+<img src="doc/real_robot_pour.gif" height=150px alt="Robot Pouring">
 </p>
 
 To run the experiment:
