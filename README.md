@@ -14,6 +14,7 @@ Container Imagination is a method which enables robot to imagine the open contai
 * [Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9269438)
 * [Paper on arxiv](https://arxiv.org/abs/2008.02321)
 * [Project Page & Video Results](https://chirikjianlab.github.io/realcontainerimagination/)
+* [Data] (https://www.dropbox.com/s/fpnxhigttq06w1w/contain_imagine_data_RAL2021.zip?dl=0)
 
 If you have any questions or find any bugs, please let me know: <hwu67@jhu.edu>
 
@@ -117,9 +118,30 @@ The robot will sequentially
   - do pouring imagination
   - pick up and pour a cup of M&M's into the object if it is identified as an open container
 
+The directory of the data is structured as follows in the end:
+```bash
+├── data_root_dir
+│   ├── data_name_0
+│   │   ├── rgbd
+│   │   │   ├── frame-000150.color.png
+│   │   │   ├── frame-000150.depth.png
+│   │   │   ├── frame-000150.pose.txt
+│   │   │   ├── ...
+│   │   │   ├── tsdf.bin
+│   │   │   ├── tsdf.ply
+│   │   ├── object_name_0.obj
+│   │   ├── object_name_0_vhacd.obj
+│   │   ├── object_name_0.urdf
+│   │   ├── object_name_0_contain.mp4
+│   │   ├── object_name_0_pour.mp4
+...
+```
+rgbd/ contains the captured depth images and the corresponding pose for reconstruction. tsdf.bin and tsdf.ply are the result of the TSDF fusion of the whole scene. Objects are segment from the scene and numbered. In our setting, since there is only one object in each scene, so they are numbered as 0. object_name_0.obj is the reconstructed mesh. object_name_0_vhacd.obj is the convex decompositon mesh from V-HACD. object_name_0.urdf is the urdf file for Pybullet experiment. object_name_0.mp4 is the imagination video. xxx.HEIC is the image of the object.
+
 The details of different modules of the experiments are listed in the following.
 
 ### Camera Calibration
+------
 Before running the experiment, the camera should be calibrated.
 
 First, calibrate the instrinsic of the depth camera.
@@ -152,6 +174,7 @@ The robot will move to the poses specified in [calibrate.py](calibrate.py) and s
 AXXB problem is solved with [Park & Martin method](https://ieeexplore.ieee.org/document/326576). The calibrated camera to end-effector transformation is a (4, 4) homogeneous transformation. It will be written to *save_dir/camera_pose.txt* in (16, ) format.
 
 ### Robot 3D Scanning
+------
 <p align="center">
 <img src="doc/robot_setup.png" height=250px alt="Robot Setup">
 <img src="doc/scan.gif" height=250px alt="Robot Scanning">
@@ -162,33 +185,46 @@ In this module, the robot autonomously moves to 24 different views to capture th
 Specify the capturing pose of the robot in *self.rob_joints_view* in [capture_view.py](capture_view.py). In this paper, we use 24 views. But more or less views are also ok.
 
 ### TSDF Fusion
+------
 TSDF fusion is used to reconstruct the volume from the depth images captured in Robot 3D Scanning.
 The TSDF Fusion code is sourced from [Andy Zeng's TSDF fusion repo](https://github.com/andyzeng/tsdf-fusion) which was originally written to work with GPU. 
 Here, we modify the code and provide a CPU version for running. Please follow the [Setup instruction](Setup.md) to install TSDF fusion.
 
 ### V-HACD convex decomposition
+------
 V-HACD is used to decompose the mesh reconstructed from TSDF fusion for physical simulation in Pybullet.
-Please follow the [Setup instruction](Setup.md)
+Please follow the [Setup instruction](Setup.md) to install V-HACD.
 
 
 ## Containability Imagination Benchmark
-The objects are saved in `test_set_all/` which contains 99 objects at the moment. To run the containability imagination benchmark, run
-```shell
-python containability_imagination.py
-```
-Set the content urdf, object directory, and result directory in *containability_imagination.py*. The imagination result (txt) for each objects will be saved in the result directory.
+First, download the [dataset](https://www.dropbox.com/s/fpnxhigttq06w1w/contain_imagine_data_RAL2021.zip?dl=0).
+To run the containability imagination benchmark, first generate the imagiantion result
+  ```
+  python containability_imagination_benchmark.py <root_dir> <data_root_dir> <result_dir>
+  ```
+  - root_dir: root directory of the code
+  - data_root_dir: root directory of the data
+  - result_dir: directory to save the result
+The imagination result (txt) for each object will be saved in the <result directory>. The format of the result is:
+  ```
+  container <sphere_in_percentage> 0 1 2 3
+  ```
+The "0 1 2 3" does not have any meaning in specific.
+Then, run the benchmark code to get the classification accuracy and AUC
+  ```
+  python benchmark_map.py <result_dir> <gt_dir>
+  ```
+  - result_dir: directory to save the result
+  - gt_dir: directory of the ground truth
 
-If you want to enable the pouring imagination, then run
-```shell
-python containability_pour.py
-```
-Set the content urdf, object directory, result directory, and the bottle urdf in *containability_pour.py*. The imagination result (txt) for each objects will be saved in the result directory.
-
-To benchmark the result with human annotation, run
-```shell
-python benchmark_human.py
-```
-Specify the data directory of the imagination result txt, annotation data directory, and the corresponding annotation files in *benchmark_human.py*. The imagination result (containability and/or pouring) will be displayed.
+We use the <sphere_in_percentage> from the containability imagination as the confidence to calculate the classificaiton accuracy and AUC.
+If <sphere_in_percentage> > 0, we classify the object as an open container.
+The ground truths are saved in a similar format:
+  ```
+  container/noncontainer 0 1 2 3
+  ```
+They are obtained from human annotation. 
+The "0 1 2 3" does not have any meaning in specific.
 
 ## Related Work
 These are the related papers on the robot imagination project our group is working on. Please take a look!
@@ -197,5 +233,5 @@ These are the related papers on the robot imagination project our group is worki
 
 For more information about our group, please visit our website at: [https://chirikjianlab.github.io/](https://chirikjianlab.github.io/)
 
-## TODO
-- [ ] Release data for benchmarking
+# TODO
+- [ ] python 3 version
