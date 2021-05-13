@@ -27,7 +27,9 @@ parser = argparse.ArgumentParser(description="Open containability imagination")
 parser.add_argument("root_dir",
                     type=str,
                     help="root directory of the container imagination")
-parser.add_argument("data_dir", type=str, help="root directory of the data")
+parser.add_argument("data_root_dir",
+                    type=str,
+                    help="root directory of the data")
 parser.add_argument("data_name", type=str, help="name of the scene captured")
 parser.add_argument("mesh_name",
                     type=str,
@@ -76,7 +78,7 @@ content_urdf = os.path.join(root_dir, "object/m&m.urdf")
 marker_content_urdf = os.path.join(root_dir, "object/m&m_red.urdf")
 
 # Root directory of the data repo
-data_root_dir = args.data_dir
+data_root_dir = args.data_root_dir
 # Data name (the data is captured as a scene and could contain more than one objects)
 data_name = args.data_name
 data_dir = os.path.join(data_root_dir, data_name)
@@ -87,7 +89,6 @@ obj_urdf = os.path.join(data_dir, mesh_name + ".urdf")
 
 print('object urdf file: {}'.format(obj_urdf))
 
-start_time = time.time()
 ################# Containability Imagination #################
 print("Start containability imagination on: {}".format(mesh_name))
 obj_vhacd_path = os.path.join(data_root_dir, data_name, obj_vhacd_file)
@@ -114,11 +115,6 @@ C.disconnect_p()
 if containability_affordance:
     drop_spot = C.find_drop_center()
     print("Pouring at: {}".format(drop_spot))
-else:
-    drop_spot = [np.nan, np.nan, np.nan]
-
-containability_imagination_time = time.time() - start_time
-#################################################################
 
 ################### Pouring Imagination ######################
 if pour:
@@ -141,54 +137,3 @@ if pour:
 
         imagined_pour_pos, imagined_cup_angle = CP.best_pour_pos_orn()
         CP.disconnect_p()
-    else:
-        spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                      [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
-else:
-    spill_list = [[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                  [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                  [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan],
-                  [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
-
-pouring_imagination_time = time.time(
-) - start_time - containability_imagination_time
-##############################################################
-
-# Imagination with pouring
-#################################################################
-if pour:
-    result_txt_name = os.path.join(data_dir, data_name + ".txt")
-    with open(result_txt_name, "w") as file1:
-        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-        file1.write("Name: " + data_name + "\n")
-        file1.write("Date: " + today + "\n")
-        file1.write("Containability: " + str(containability_affordance) + "\n")
-        file1.write("Sphere in percentage: " + str(sphere_in_percentage) +
-                    "\n")
-        file1.write("Average drop position: " + str(list(drop_spot)) + "\n")
-        file1.write("Imagined pour position: " + str(imagined_pour_pos) + "\n")
-        file1.write("Imagined cup angle: " + str(imagined_cup_angle) + "\n")
-        file1.write("Spill List: " + str(list(spill_list)) + "\n")
-        file1.write("Containability imagination time: " +
-                    str(containability_imagination_time) + "\n")
-        file1.write("Pouring imagination time: " +
-                    str(pouring_imagination_time) + "\n")
-#################################################################
-
-# Imagination without pouring
-#################################################################
-if not pour:
-    result_txt_name = os.path.join(data_dir, data_name + ".txt")
-    with open(result_txt_name, "w") as file1:
-        today = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-        file1.write("Name: " + data_name + "\n")
-        file1.write("Date: " + today + "\n")
-        file1.write("Containability: " + str(containability_affordance) + "\n")
-        file1.write("Sphere in percentage: " + str(sphere_in_percentage) +
-                    "\n")
-        file1.write("Pour position: " + str(list(drop_spot)) + "\n")
-        file1.write("Containability imagination time: " +
-                    str(containability_imagination_time) + "\n")
-#################################################################

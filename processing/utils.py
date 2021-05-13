@@ -1,19 +1,19 @@
-"""
-Utils functions
+# Utility functions for data processing
+# Segmentation out with plane model and euclidean cluster with PCL.
+# Plane model: http://pointclouds.org/documentation/tutorials/planar_segmentation.php#planar-segmentation
+# Euclidean cluster: http://pointclouds.org/documentation/tutorials/cluster_extraction.php#cluster-extraction
+# First use plane model to cut out all the plane. Then segement models with Euclidean cluster.
+# Convert tsdf to ply source code: https://github.com/RobotLocomotion/spartan
+# V-HACD repo: https://github.com/kmammou/v-hacd
 
-Segmentation out with plane model and euclidean cluster with PCL.
-Plane model: http://pointclouds.org/documentation/tutorials/planar_segmentation.php#planar-segmentation
-Euclidean cluster: http://pointclouds.org/documentation/tutorials/cluster_extraction.php#cluster-extraction
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Nov 05, 2019
 
-First use plane model to cut out all the plane. Then segement models with Euclidean cluster.
-Python binding for Plane model: https://github.com/Sirokujira/python-pcl/blob/rc_patches4/examples/official/Segmentation/Plane_model_segmentation.py
-Python binding for Euclidean cluster: https://github.com/Sirokujira/python-pcl/blob/rc_patches4/examples/official/Segmentation/cluster_extraction.py
-
-Convert tsdf to ply source code: https://github.com/RobotLocomotion/spartan/blob/854b26e3af75910ef57b874db7853abd4249543e/src/catkin_projects/fusion_server/src/fusion_server/tsdf_fusion.py#L126
-
-@author: Hongtao Wu
-Nov 25, 2019
-"""
+from __future__ import print_function
+import os
+import time
+import subprocess
 import time
 import array
 import numpy as np
@@ -24,59 +24,117 @@ import trimesh
 import csv
 import os
 
+#// --input camel.off --output camel_acd.wrl --log log.txt --resolution 1000000 --depth 20 --concavity 0.0025 --planeDownsampling 4 --convexhullDownsampling 4 --alpha 0.05 --beta 0.05 --gamma 0.00125
+# --pca 0 --mode 0 --maxNumVerticesPerCH 256 --minVolumePerCH 0.0001 --convexhullApproximation 1 --oclDeviceID 2
 
-def quat2rotm(quat):
+
+def run_vhacd(vhacd_executable_dir,
+              input_file,
+              output_file,
+              log='log.txt',
+              resolution=500000,
+              depth=20,
+              concavity=0.0025,
+              planeDownsampling=4,
+              convexhullDownsampling=4,
+              alpha=0.05,
+              beta=0.05,
+              gamma=0.00125,
+              pca=0,
+              mode=0,
+              maxNumVerticesPerCH=256,
+              minVolumePerCH=0.0001,
+              convexhullApproximation=1):
     """
-    Quaternion to rotation matrix.
-
-    Args:
-    - quat (4, numpy array): quaternion w, x, y, z
-
-    Returns:
-    - rotm: (3x3 numpy array): rotation matrix
+    The wrapper function to run the vhacd convex decomposition.
     """
-    w = quat[0]
-    x = quat[1]
-    y = quat[2]
-    z = quat[3]
+    vhacd_executable = os.path.join(vhacd_executable_dir, "testVHACD")
+    print("V-HACD executable: {}".format(vhacd_executable))
+    if not os.path.isfile(vhacd_executable):
+        print(vhacd_executable)
+        raise ValueError('V-HACD executable not found, have you compiled it?')
 
-    s = w * w + x * x + y * y + z * z
+    cmd = "cd %s && %s --input %s --output %s --log %s --resolution %s --depth %s --concavity %s --planeDownsampling %s --convexhullDownsampling %s --alpha %s --beta %s --gamma %s \
+        --pca %s --mode %s --maxNumVerticesPerCH %s --minVolumePerCH %s --convexhullApproximation %s" % (
+        vhacd_executable_dir, vhacd_executable, input_file, output_file, log,
+        resolution, depth, concavity, planeDownsampling,
+        convexhullDownsampling, alpha, beta, gamma, pca, mode,
+        maxNumVerticesPerCH, minVolumePerCH, convexhullApproximation)
 
-    rotm = np.array([[
-        1 - 2 * (y * y + z * z) / s, 2 * (x * y - z * w) / s,
-        2 * (x * z + y * w) / s
-    ],
-        [
-        2 * (x * y + z * w) / s, 1 - 2 * (x * x + z * z) / s,
-        2 * (y * z - x * w) / s
-    ],
-        [
-        2 * (x * z - y * w) / s, 2 * (y * z + x * w) / s,
-        1 - 2 * (x * x + y * y) / s
-    ]])
+    print("cmd:\n", cmd)
 
-    return rotm
+    start_time = time.time()
+    process = subprocess.Popen(cmd, shell=True)
+    process.wait()
+    elapsed = time.time() - start_time
+
+    print("V-HACD took %d seconds" % (elapsed))
 
 
-def make_rigid_transformation(pos, orn):
+def write_urdf(urdf_path,
+               obj_original_file,
+               obj_vhacd_file,
+               mass=0.0,
+               origin_x=0.0,
+               origin_y=0.0,
+               origin_z=0.0,
+               origin_roll=0.0,
+               origin_pitch=0.0,
+               origin_yaw=0.0,
+               ixx=0.0,
+               ixy=0.0,
+               ixz=0.0,
+               iyy=0.0,
+               iyz=0.0,
+               izz=0.0):
     """
-    Rigid transformation from position and orientation.
-
-    Args:
-    - pos (3, numpy array): translation
-    - orn (4, numpy array): orientation in quaternion
-
-    Returns:
-    - homo_mat (4x4 numpy array): homogenenous transformation matrix
+    Writing the URDF file for Pybullet simulation.
+    
+    @type  obj_original_file: string
+    @param obj_original_file: the file name of the original file, e.g., cup_0003.obj
+    @type  obj_vhacd_file: string
+    @param obj_vhacd_file: the filename of the vhacd file, e.g., cup_0003_vhacd.obj
     """
-    rotm = quat2rotm(orn)
-    homo_mat = np.c_[rotm, np.reshape(pos, (3, 1))]
-    homo_mat = np.r_[homo_mat, [[0, 0, 0, 1]]]
 
-    return homo_mat
+    f = open(urdf_path, 'w+')
+    obj_name = obj_original_file.split('.')[0]
+
+    f.write(
+        '<?xml version=\"1.0\" ?>\n'
+        '<robot name=\"%s.urdf\">\n'
+        '  <link name=\"baseLink\">\n'
+        '    <contact>\n'
+        '      <lateral_friction value=\"1.0\"/>\n'
+        '      <inertia_scaling value=\"1.0\"/>\n'
+        '    </contact>\n'
+        '    <inertial>\n'
+        '      <origin rpy=\"0 0 0\" xyz=\"%.6f %.6f %.6f\"/>\n'
+        '      <mass value=\"%.6f\"/>\n'
+        '      <inertia ixx=\"%.6f\" ixy=\"%.6f\" ixz=\"%.6f\" iyy=\"%.6f\" iyz=\"%.6f\" izz=\"%.6f\"/>\n'
+        '    </inertial>\n'
+        '    <visual>\n'
+        '      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n'
+        '      <geometry>\n'
+        '       <mesh filename=\"%s\" scale=\"1 1 1\"/>\n'
+        '      </geometry>\n'
+        '       <material name=\"white\">\n'
+        '        <color rgba=\"1 1 1 1\"/>\n'
+        '      </material>\n'
+        '    </visual>\n'
+        '    <collision>\n'
+        '      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n'
+        '      <geometry>\n'
+        '        <mesh filename=\"%s\" scale=\"1 1 1\"/>\n'
+        '      </geometry>\n'
+        '    </collision>\n'
+        '  </link>\n'
+        '</robot>\n' % (obj_name, origin_x, origin_y, origin_z, mass, ixx, ixy,
+                        ixz, iyy, iyz, izz, obj_original_file, obj_vhacd_file))
+
+    f.close()
 
 
-def segment_aabb_noplaneseg(points, ply_output_prefix):
+def segment_aabb(points, ply_output_prefix):
     """
     Return the AABB of the segmented object
     Trim off the plane and segment the object with Euclidean cluster
@@ -112,8 +170,6 @@ def segment_aabb_noplaneseg(points, ply_output_prefix):
     ec.set_SearchMethod(tree)
     cluster_indices = ec.Extract()
 
-    print('cluster_indices : ' + str(cluster_indices.count) + " count.")
-
     total_aabb = []
 
     # Compute AABB for each object
@@ -143,7 +199,7 @@ def segment_aabb_noplaneseg(points, ply_output_prefix):
         min_z = np.min(obj_points[:, 2])
         obj_aabb = [(min_x, min_y, min_z), (max_x, max_y, max_z)]
         total_aabb.append(obj_aabb)
-        print 'object aabb: {}'.format(obj_aabb)
+        print('object aabb: {}'.format(obj_aabb))
 
     return total_aabb
 
@@ -177,33 +233,14 @@ def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
     voxelSize = tsdfHeader[6]
     truncMargin = tsdfHeader[7]
 
-    # dim_x = voxelGridDim[0]
-    # dim_y = voxelGridDim[1]
-    # dim_z = voxelGridDim[2]
-
     headerSize = 8
     tsdf_vec = np.fromfile(tsdf_bin_filename, np.float32)
     tsdf_vec = tsdf_vec[headerSize:]
     tsdf = np.reshape(tsdf_vec, voxelGridDim,
                       order='F')  # reshape using Fortran order
 
-    # print "tsdf.shape:", tsdf.shape
-    # print "voxelGridDim: ", voxelGridDim
-    # print "voxeGridOrigin: ", voxelGridOrigin
-    # print "tsdf.shape:", tsdf.shape
-
     verts, faces, normals, values = measure.marching_cubes_lewiner(
         tsdf, spacing=[voxelSize] * 3, level=0)
-
-    # print "type(verts): ", type(verts)
-    # print "verts.shape: ", verts.shape
-    # print "faces.shape:", faces.shape
-
-    # print "np.max(verts[:,0]): ", np.max(verts[:,0])
-    # print "np.min(verts[:,0]): ", np.min(verts[:, 0])
-
-    print "verts[0,:] = ", verts[0, :]
-    print "faces[0,:] = ", faces[0, :]
 
     # transform from voxel coordinates to camera coordinates
     # note x and y are flipped in the output of marching_cubes
@@ -213,7 +250,6 @@ def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
     mesh_points[:, 2] = voxelGridOrigin[2] + verts[:, 2]
 
     # Write the ply file
-    print "Converting numpy arrays to format for ply file"
     ply_conversion_start_time = time.time()
 
     num_verts = verts.shape[0]
@@ -235,11 +271,11 @@ def convert_tsdf_to_ply(tsdf_bin_filename, tsdf_mesh_filename):
     el_faces = PlyElement.describe(faces_tuple, 'face')
 
     ply_data = PlyData([el_verts, el_faces])
-    print "Saving mesh to %s" % (tsdf_mesh_filename)
+    print("Saving mesh to %s" % (tsdf_mesh_filename))
     ply = ply_data.write(tsdf_mesh_filename)
 
-    print "Converting to ply format and writing to file took %d s" % (
-        time.time() - start_time)
+    print("Converting to ply format and writing to file took %d s" %
+          (time.time() - start_time))
 
     # return mesh_points, tsdf, voxelGridOrigin, voxelSize
 
@@ -257,7 +293,7 @@ def ply2csv(ply_file, csv_file):
 
     vertices_num = len(ply['vertex']['x'])
 
-    print "Number of all vertices: {}".format(vertices_num)
+    print("Number of all vertices: {}".format(vertices_num))
 
     with open(csv_file, 'w') as c_file:
         writer = csv.writer(c_file, quoting=csv.QUOTE_NONE)

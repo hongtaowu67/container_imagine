@@ -19,7 +19,6 @@ class AutoCapture(object):
     """
     Class to automatically capture the scene for reconstruction
     """
-
     def __init__(self,
                  data_folder,
                  acc,

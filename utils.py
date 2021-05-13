@@ -1,7 +1,8 @@
+# Utils functions
 
-"""
-Utils functions
-"""
+# Author: Hongtao Wu
+# Institution: Johns Hopkins University
+# Date: Dec 24, 2019
 
 import struct
 import math
@@ -10,12 +11,12 @@ import warnings
 import cv2
 
 
-def isRotm(R) :
+def isRotm(R):
     # Checks if a matrix is a valid rotation matrix.
     # Forked from Andy Zeng
     Rt = np.transpose(R)
     shouldBeIdentity = np.dot(Rt, R)
-    I = np.identity(3, dtype = R.dtype)
+    I = np.identity(3, dtype=R.dtype)
     n = np.linalg.norm(I - shouldBeIdentity)
     return n < 1e-6
 
@@ -26,15 +27,17 @@ def angle2rotm(angle, axis, point=None):
     sina = math.sin(angle)
     cosa = math.cos(angle)
     axis_magnitude = np.linalg.norm(axis)
-    axis = np.divide(axis, axis_magnitude, out=np.zeros_like(axis), where=axis_magnitude!=0)
+    axis = np.divide(axis,
+                     axis_magnitude,
+                     out=np.zeros_like(axis),
+                     where=axis_magnitude != 0)
 
     # Rotation matrix around unit vector
     R = np.diag([cosa, cosa, cosa])
     R += np.array(np.outer(axis, axis) * (1.0 - cosa))
     axis *= sina
-    RA = np.array([[ 0.0,     -axis[2],  axis[1]],
-                      [ axis[2], 0.0,      -axis[0]],
-                      [-axis[1], axis[0],  0.0]])
+    RA = np.array([[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]],
+                   [-axis[1], axis[0], 0.0]])
     R = RA + np.array(R)
     M = np.identity(4)
     M[:3, :3] = R
@@ -49,67 +52,74 @@ def angle2rotm(angle, axis, point=None):
 def rotm2angle(R):
     # From: euclideanspace.com
 
-    epsilon = 0.01 # Margin to allow for rounding errors
-    epsilon2 = 0.1 # Margin to distinguish between 0 and 180 degrees
+    epsilon = 0.01  # Margin to allow for rounding errors
+    epsilon2 = 0.1  # Margin to distinguish between 0 and 180 degrees
 
-    assert(isRotm(R))
+    assert (isRotm(R))
 
-    if ((abs(R[0][1]-R[1][0])< epsilon) and (abs(R[0][2]-R[2][0])< epsilon) and (abs(R[1][2]-R[2][1])< epsilon)):
+    if ((abs(R[0][1] - R[1][0]) < epsilon)
+            and (abs(R[0][2] - R[2][0]) < epsilon)
+            and (abs(R[1][2] - R[2][1]) < epsilon)):
         # Singularity found
         # First check for identity matrix which must have +1 for all terms in leading diagonaland zero in other terms
-        if ((abs(R[0][1]+R[1][0]) < epsilon2) and (abs(R[0][2]+R[2][0]) < epsilon2) and (abs(R[1][2]+R[2][1]) < epsilon2) and (abs(R[0][0]+R[1][1]+R[2][2]-3) < epsilon2)):
+        if ((abs(R[0][1] + R[1][0]) < epsilon2)
+                and (abs(R[0][2] + R[2][0]) < epsilon2)
+                and (abs(R[1][2] + R[2][1]) < epsilon2)
+                and (abs(R[0][0] + R[1][1] + R[2][2] - 3) < epsilon2)):
             # this singularity is identity matrix so angle = 0
-            return [0,1,0,0] # zero angle, arbitrary axis
+            return [0, 1, 0, 0]  # zero angle, arbitrary axis
 
         # Otherwise this singularity is angle = 180
         angle = np.pi
-        xx = (R[0][0]+1)/2
-        yy = (R[1][1]+1)/2
-        zz = (R[2][2]+1)/2
-        xy = (R[0][1]+R[1][0])/4
-        xz = (R[0][2]+R[2][0])/4
-        yz = (R[1][2]+R[2][1])/4
-        if ((xx > yy) and (xx > zz)): # R[0][0] is the largest diagonal term
-            if (xx< epsilon):
+        xx = (R[0][0] + 1) / 2
+        yy = (R[1][1] + 1) / 2
+        zz = (R[2][2] + 1) / 2
+        xy = (R[0][1] + R[1][0]) / 4
+        xz = (R[0][2] + R[2][0]) / 4
+        yz = (R[1][2] + R[2][1]) / 4
+        if ((xx > yy) and (xx > zz)):  # R[0][0] is the largest diagonal term
+            if (xx < epsilon):
                 x = 0
                 y = 0.7071
                 z = 0.7071
             else:
                 x = np.sqrt(xx)
-                y = xy/x
-                z = xz/x
-        elif (yy > zz): # R[1][1] is the largest diagonal term
-            if (yy< epsilon):
+                y = xy / x
+                z = xz / x
+        elif (yy > zz):  # R[1][1] is the largest diagonal term
+            if (yy < epsilon):
                 x = 0.7071
                 y = 0
                 z = 0.7071
             else:
                 y = np.sqrt(yy)
-                x = xy/y
-                z = yz/y
-        else: # R[2][2] is the largest diagonal term so base result on this
-            if (zz< epsilon):
+                x = xy / y
+                z = yz / y
+        else:  # R[2][2] is the largest diagonal term so base result on this
+            if (zz < epsilon):
                 x = 0.7071
                 y = 0.7071
                 z = 0
             else:
                 z = np.sqrt(zz)
-                x = xz/z
-                y = yz/z
-        return [angle,x,y,z] # Return 180 deg rotation
+                x = xz / z
+                y = yz / z
+        return [angle, x, y, z]  # Return 180 deg rotation
 
     # As we have reached here there are no singularities so we can handle normally
-    s = np.sqrt((R[2][1] - R[1][2])*(R[2][1] - R[1][2]) + (R[0][2] - R[2][0])*(R[0][2] - R[2][0]) + (R[1][0] - R[0][1])*(R[1][0] - R[0][1])) # used to normalise
+    s = np.sqrt((R[2][1] - R[1][2]) * (R[2][1] - R[1][2]) +
+                (R[0][2] - R[2][0]) * (R[0][2] - R[2][0]) +
+                (R[1][0] - R[0][1]) * (R[1][0] - R[0][1]))  # used to normalise
     if (abs(s) < 0.001):
-        s = 1 
+        s = 1
 
     # Prevent divide by zero, should not happen if matrix is orthogonal and should be
     # Caught by singularity test above, but I've left it in just in case
-    angle = np.arccos(( R[0][0] + R[1][1] + R[2][2] - 1)/2)
-    x = (R[2][1] - R[1][2])/s
-    y = (R[0][2] - R[2][0])/s
-    z = (R[1][0] - R[0][1])/s
-    return [angle,x,y,z]
+    angle = np.arccos((R[0][0] + R[1][1] + R[2][2] - 1) / 2)
+    x = (R[2][1] - R[1][2]) / s
+    y = (R[0][2] - R[2][0]) / s
+    z = (R[1][0] - R[0][1]) / s
+    return [angle, x, y, z]
 
 
 def make_rigid_transformation(pos, rotm):
@@ -123,7 +133,7 @@ def make_rigid_transformation(pos, rotm):
     """
     homo_mat = np.c_[rotm, np.reshape(pos, (3, 1))]
     homo_mat = np.r_[homo_mat, [[0, 0, 0, 1]]]
-    
+
     return homo_mat
 
 
@@ -141,12 +151,20 @@ def quat2rotm(quat):
     y = quat[2]
     z = quat[3]
 
-    s = w*w + x*x + y*y + z*z
+    s = w * w + x * x + y * y + z * z
 
-    rotm = np.array([[1-2*(y*y+z*z)/s, 2*(x*y-z*w)/s,   2*(x*z+y*w)/s  ],
-                     [2*(x*y+z*w)/s,   1-2*(x*x+z*z)/s, 2*(y*z-x*w)/s  ],
-                     [2*(x*z-y*w)/s,   2*(y*z+x*w)/s,   1-2*(x*x+y*y)/s]
-    ])
+    rotm = np.array([[
+        1 - 2 * (y * y + z * z) / s, 2 * (x * y - z * w) / s,
+        2 * (x * z + y * w) / s
+    ],
+                     [
+                         2 * (x * y + z * w) / s, 1 - 2 * (x * x + z * z) / s,
+                         2 * (y * z - x * w) / s
+                     ],
+                     [
+                         2 * (x * z - y * w) / s, 2 * (y * z + x * w) / s,
+                         1 - 2 * (x * x + y * y) / s
+                     ]])
 
     return rotm
 
@@ -165,7 +183,7 @@ def pose_inv(pose):
     t = pose[:3, 3]
 
     inv_R = R.T
-    inv_t = - np.dot(inv_R, t)
+    inv_t = -np.dot(inv_R, t)
 
     inv_pose = np.c_[inv_R, np.transpose(inv_t)]
     inv_pose = np.r_[inv_pose, [[0, 0, 0, 1]]]
@@ -174,7 +192,7 @@ def pose_inv(pose):
 
 
 def get_mat_log(R):
-  """
+    """
   Get the log(R) of the rotation matrix R.
   
   Args:
@@ -183,8 +201,8 @@ def get_mat_log(R):
   Returns:
   - w (3, numpy array): log(R)
   """
-  theta = np.arccos((np.trace(R) - 1) / 2)
-  w_hat = (R - R.T) * theta / (2 * np.sin(theta))  # Skew symmetric matrix
-  w = np.array([w_hat[2, 1], w_hat[0, 2], w_hat[1, 0]])  # [w1, w2, w3]
+    theta = np.arccos((np.trace(R) - 1) / 2)
+    w_hat = (R - R.T) * theta / (2 * np.sin(theta))  # Skew symmetric matrix
+    w = np.array([w_hat[2, 1], w_hat[0, 2], w_hat[1, 0]])  # [w1, w2, w3]
 
-  return w
+    return w
