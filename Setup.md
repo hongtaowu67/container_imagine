@@ -21,6 +21,10 @@ If you only need the imagination module, please install the following packages.
   cmake ..
   make
   ```
+* [Trimesh](https://github.com/mikedh/trimesh): mesh processing library. We use trimesh 3.9.1 in our expriment.
+  ```
+  pip install trimesh
+  ```
 
 * ffmpeg: saving the video of the imagination process.
   ```
